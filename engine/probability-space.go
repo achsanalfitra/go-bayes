@@ -43,6 +43,20 @@ func (ps *ProbabilitySpace) AddPair(event string, prob float64) {
 	}
 }
 
+// Remove a pair of sample
+func (ps *ProbabilitySpace) DelPair(event string) {
+	// Check if event already exist
+	_, isExist := ps.space[event]
+
+	if !isExist {
+		fmt.Println("Error: event doesn't exist")
+		return
+	}
+
+	delete(ps.space, event)
+	ps.UpdateValidity()
+}
+
 // Change probability of an event
 func (ps *ProbabilitySpace) ChangeProb(event string, prob float64) {
 
@@ -58,6 +72,9 @@ func (ps *ProbabilitySpace) ChangeProb(event string, prob float64) {
 	if isExist {
 		ps.space[event] = prob
 		ps.UpdateValidity()
+	} else {
+		fmt.Println("Error: event doesn't exist")
+		return
 	}
 }
 
