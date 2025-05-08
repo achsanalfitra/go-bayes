@@ -17,10 +17,10 @@ func NewProbabilitySpace() *ProbabilitySpace {
 }
 
 // Add a new event and probability pair
-func (ps *ProbabilitySpace) AddPair(event string, probability float64) {
+func (ps *ProbabilitySpace) AddPair(event string, prob float64) {
 
 	// Input first-check
-	if probability < 0 || probability > 1 {
+	if prob < 0 || prob > 1 {
 		fmt.Println("Error: enter probability value between 0 and 1")
 		return
 	}
@@ -33,20 +33,36 @@ func (ps *ProbabilitySpace) AddPair(event string, probability float64) {
 		return
 	}
 
-	// Check input against total probability
-	totalProb := ps.CheckProb() + probability
+	// Add the input pair
+	ps.space[event] = prob
+	ps.UpdateValidity()
 
-	if totalProb > 1 {
+	// Warning the user if the probability exceeds 1
+	if !ps.CheckValidity() {
 		fmt.Println("Warning: your input makes total probability exceeding 1")
-		ps.isProbabilitySpace = false
-	} else {
-		ps.space[event] = probability
-		ps.isProbabilitySpace = true
+	}
+}
+
+// Change probability of an event
+func (ps *ProbabilitySpace) ChangeProb(event string, prob float64) {
+
+	// Input first-check
+	if prob < 0 || prob > 1 {
+		fmt.Println("Error: enter probability value between 0 and 1")
+		return
+	}
+
+	// Check if event already exist
+	_, isExist := ps.space[event]
+
+	if isExist {
+		ps.space[event] = prob
+		ps.UpdateValidity()
 	}
 }
 
 // Check total probability
-func (ps *ProbabilitySpace) CheckProb() float64 {
+func (ps *ProbabilitySpace) TotalProb() float64 {
 	totalProb := 0.0
 	for _, prob := range ps.space {
 		totalProb += prob
@@ -55,8 +71,15 @@ func (ps *ProbabilitySpace) CheckProb() float64 {
 }
 
 // Check probability probability space validity
-func (ps *ProbabilitySpace) IsValid() bool {
+func (ps *ProbabilitySpace) CheckValidity() bool {
 	return ps.isProbabilitySpace
+}
+
+// Update probability space validity
+func (ps *ProbabilitySpace) UpdateValidity() {
+	totalProb := ps.TotalProb()
+
+	ps.isProbabilitySpace = totalProb >= 0 && totalProb <= 1
 }
 
 // Show current probability space
@@ -68,7 +91,7 @@ func (ps *ProbabilitySpace) ShowPair() {
 
 // Normalize each event probability
 func (ps *ProbabilitySpace) Normalize() {
-	totalProb := ps.CheckProb()
+	totalProb := ps.TotalProb()
 
 	if totalProb == 0 {
 		fmt.Println("Error: total probability is zero, cannot normalize")
