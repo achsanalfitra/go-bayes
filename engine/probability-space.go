@@ -41,6 +41,7 @@ func (ps *ProbabilitySpace) AddPair(event string, probability float64) {
 		ps.isProbabilitySpace = false
 	} else {
 		ps.space[event] = probability
+		ps.isProbabilitySpace = true
 	}
 }
 
@@ -55,7 +56,7 @@ func (ps *ProbabilitySpace) CheckProb() float64 {
 
 // Check probability probability space validity
 func (ps *ProbabilitySpace) IsValid() bool {
-	return ps.CheckProb() <= 1.0
+	return ps.isProbabilitySpace
 }
 
 // Show current probability space
@@ -63,4 +64,20 @@ func (ps *ProbabilitySpace) ShowPair() {
 	for event, prob := range ps.space {
 		fmt.Printf("%s: %.4f\n", event, prob)
 	}
+}
+
+// Normalize each event probability
+func (ps *ProbabilitySpace) Normalize() {
+	totalProb := ps.CheckProb()
+
+	if totalProb == 0 {
+		fmt.Println("Error: total probability is zero, cannot normalize")
+		return
+	}
+
+	for event, prob := range ps.space {
+		ps.space[event] = prob / totalProb
+	}
+
+	ps.isProbabilitySpace = true
 }
