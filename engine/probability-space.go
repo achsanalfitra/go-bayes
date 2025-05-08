@@ -57,3 +57,10 @@ func (ps *ProbabilitySpace) CheckProb() float64 {
 func (ps *ProbabilitySpace) IsValid() bool {
 	return ps.CheckProb() <= 1.0
 }
+
+// Show current probability space
+func (ps *ProbabilitySpace) ShowPair() {
+	for event, prob := range ps.space {
+		fmt.Printf("%s: %.4f\n", event, prob)
+	}
+}
