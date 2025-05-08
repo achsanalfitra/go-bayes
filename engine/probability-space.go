@@ -87,6 +87,20 @@ func (ps *ProbabilitySpace) TotalProb() float64 {
 	return totalProb
 }
 
+// Return probability of an event
+func (ps *ProbabilitySpace) ProbOf(event string) float64 {
+	// Check if event already exist
+	_, isExist := ps.space[event]
+
+	if !isExist {
+
+		fmt.Println("Error: event doesn't exist")
+		return -400 // missing event
+	}
+
+	return ps.space[event]
+}
+
 // Check probability probability space validity
 func (ps *ProbabilitySpace) CheckValidity() bool {
 	return ps.isProbabilitySpace
