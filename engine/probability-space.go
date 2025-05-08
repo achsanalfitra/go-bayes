@@ -25,6 +25,14 @@ func (ps *ProbabilitySpace) AddPair(event string, probability float64) {
 		return
 	}
 
+	// Check if event already exist
+	_, isExist := ps.space[event]
+
+	if isExist {
+		fmt.Println("Error: event already exists, use ChangeProbability to change its probability")
+		return
+	}
+
 	// Check input against total probability
 	totalProb := ps.CheckProb() + probability
 
