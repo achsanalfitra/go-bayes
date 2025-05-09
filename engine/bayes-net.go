@@ -73,6 +73,30 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	n.condSet = true
 }
 
+func (n *Node) SetJoint(prob float64, events map[string]string) {
+	if len(events) == 1 {
+		fmt.Println("Cant have 1 event joint probability bro")
+	}
+
+	if n.margSet && n.condSet {
+		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and conditional probability specified")
+
+		return
+	}
+
+	n.joint.AddPair(n.encodeJoint(events), prob)
+	for name, state := range events {
+		if parent, isExist := n.parents[name]; isExist {
+			parent.UpdateState(state)
+		}
+
+		if child, isExist := n.children[name]; isExist {
+			child.UpdateState(state)
+		}
+	}
+	n.margSet = true
+}
+
 func (n *Node) UpdateState(event string) {
 	if !slices.Contains(n.states, event) {
 		n.states = append(n.states, event)
@@ -93,4 +117,12 @@ func (n *Node) encodeCond(event string, parentState map[string]string) string {
 	}
 
 	return encoded
+}
+
+func (n *Node) encodeJoint(events map[string]string) string {
+	encoded := ""
+	for name, state := range events {
+		encoded += state + " "
+	}
+	return encoded[:len(encoded)-1]
 }
