@@ -11,8 +11,8 @@ type Node struct {
 	marg     *ProbabilitySpace
 	cond     *ProbabilitySpace
 	joint    *ProbabilitySpace
-	parents  []*Node
-	children []*Node
+	parents  map[string]*Node
+	children map[string]*Node
 	cpt      map[string]float64
 	margSet  bool
 	condSet  bool
@@ -30,8 +30,8 @@ func NewNode(name string) *Node {
 		marg:     NewProbabilitySpace(),
 		cond:     NewProbabilitySpace(),
 		joint:    NewProbabilitySpace(),
-		parents:  []*Node{},
-		children: []*Node{},
+		parents:  make(map[string]*Node),
+		children: make(map[string]*Node),
 		cpt:      make(map[string]float64),
 		margSet:  false,
 		condSet:  false,
@@ -55,7 +55,7 @@ func (n *Node) SetMarg(event string, prob float64) {
 	n.margSet = true
 }
 
-func (n *Node) SetCond(event string, prob float64) {
+func (n *Node) SetCond(event string, givenState map[string]string, prob float64) {
 	if len(n.parents) == 0 {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "has no parents")
 
@@ -68,7 +68,7 @@ func (n *Node) SetCond(event string, prob float64) {
 		return
 	}
 
-	n.cond.AddPair(event, prob)
+	n.cond.AddPair(n.encodeCond(event, givenState), prob)
 	n.UpdateState(event)
 	n.condSet = true
 }
@@ -77,4 +77,20 @@ func (n *Node) UpdateState(event string) {
 	if !slices.Contains(n.states, event) {
 		n.states = append(n.states, event)
 	}
+}
+
+func (n *Node) encodeCond(event string, parentState map[string]string) string {
+	encoded := event
+
+	encoded += " |"
+
+	for pName, pState := range parentState {
+		if parent, isExist := n.parents[pName]; isExist {
+			parent.UpdateState(pState)
+		}
+
+		encoded += " " + pState
+	}
+
+	return encoded
 }
