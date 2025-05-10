@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 type Node struct {
@@ -103,20 +104,30 @@ func (n *Node) UpdateState(event string) {
 	}
 }
 
-func (n *Node) encodeCond(event string, parentState map[string]string) string {
-	encoded := event
+func (n *Node) encodeCond(event string, parents map[string]string) string {
+	// Create encoded as strings.Builder
+	var encoded strings.Builder
+	encoded.WriteString(event)
+	encoded.WriteString(" |")
 
-	encoded += " |"
-
-	for pName, pState := range parentState {
-		if parent, isExist := n.parents[pName]; isExist {
-			parent.UpdateState(pState)
-		}
-
-		encoded += " " + pState
+	// Sort parents so it is deterministic
+	pNames := make([]string, 0, len(parents))
+	for pName := range parents {
+		pNames = append(pNames, pName)
 	}
 
-	return encoded
+	slices.Sort(pNames)
+
+	// Adding sorted parent state onto encoded in order
+	for _, pName := range pNames {
+		encoded.WriteString(" ")
+		encoded.WriteString(pName)
+		encoded.WriteString("=")
+		encoded.WriteString(parents[pName]) // The map query returns pState
+	}
+
+	// Return encoded as string
+	return encoded.String()
 }
 
 func (n *Node) encodeJoint(events map[string]string) string {
@@ -126,3 +137,13 @@ func (n *Node) encodeJoint(events map[string]string) string {
 	}
 	return encoded[:len(encoded)-1]
 }
+
+// for pName, pState := range parentState {
+// 		if parent, isExist := n.parents[pName]; isExist {
+// 			parent.UpdateState(pState)
+// 		}
+
+// 		pList = append(pList, pState)
+// 	}
+
+// 	slices.Sort(pList)
