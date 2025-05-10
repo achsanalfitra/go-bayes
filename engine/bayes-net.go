@@ -57,20 +57,34 @@ func (n *Node) SetMarg(event string, prob float64) {
 }
 
 func (n *Node) SetCond(event string, givenState map[string]string, prob float64) {
+	// Check if parents do not exist
 	if len(n.parents) == 0 {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "has no parents")
 
 		return
 	}
 
+	// Check if marginal and joint are already set
 	if n.margSet && n.jointSet {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
 
 		return
 	}
 
+	// Update event into conditional probility
 	n.cond.AddPair(n.encodeCond(event, givenState), prob)
+
+	// Update state into node states
 	n.UpdateState(event)
+
+	// Update parent states that are used in this setting method
+	for pName, pState := range givenState {
+		if parent, isExist := n.parents[pName]; isExist {
+			parent.UpdateState(pState)
+		}
+	}
+
+	// Flag as set in joint probability
 	n.condSet = true
 }
 
