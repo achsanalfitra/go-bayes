@@ -131,11 +131,29 @@ func (n *Node) encodeCond(event string, parents map[string]string) string {
 }
 
 func (n *Node) encodeJoint(events map[string]string) string {
-	encoded := ""
-	for name, state := range events {
-		encoded += state + " "
+	// Create encoded as strings.Builder
+	var encoded strings.Builder
+
+	// Sort events so it is deterministic
+	eNames := make([]string, 0, len(events))
+	for eName := range events {
+		eNames = append(eNames, eName)
 	}
-	return encoded[:len(encoded)-1]
+
+	slices.Sort(eNames)
+
+	// Adding sorted event names onto encoded in order
+	for i, eName := range eNames {
+		encoded.WriteString(eName)
+		encoded.WriteString("=")
+		encoded.WriteString(events[eName])
+		if i != len(eNames)-1 {
+			encoded.WriteString(" ") // Add whitespace only if not the last event
+		}
+	}
+
+	// Return encoded as string
+	return encoded.String()
 }
 
 // for pName, pState := range parentState {
