@@ -8,7 +8,7 @@ import (
 
 type Node struct {
 	name     string
-	states   []string
+	states   map[string]bool
 	marg     *ProbabilitySpace
 	cond     *ProbabilitySpace
 	joint    *ProbabilitySpace
@@ -20,7 +20,7 @@ type Node struct {
 func NewNode(name string) *Node {
 	return &Node{
 		name:     name,
-		states:   []string{},
+		states:   make(map[string]bool),
 		marg:     NewProbabilitySpace(),
 		cond:     NewProbabilitySpace(),
 		joint:    NewProbabilitySpace(),
@@ -117,8 +117,8 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 
 func (n *Node) UpdateState(event string) {
 	// Add state used in setting methods to the state list in the node
-	if !slices.Contains(n.states, event) {
-		n.states = append(n.states, event)
+	if _, isExist := n.states[event]; !isExist {
+		n.states[event] = true
 	}
 }
 
