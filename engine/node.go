@@ -15,9 +15,6 @@ type Node struct {
 	parents  map[string]*Node
 	children map[string]*Node
 	cpt      map[string]float64
-	margSet  bool
-	condSet  bool
-	jointSet bool
 }
 
 func NewNode(name string) *Node {
@@ -30,9 +27,6 @@ func NewNode(name string) *Node {
 		parents:  make(map[string]*Node),
 		children: make(map[string]*Node),
 		cpt:      make(map[string]float64),
-		margSet:  false,
-		condSet:  false,
-		jointSet: false,
 	}
 }
 
@@ -49,7 +43,6 @@ func (n *Node) SetMarg(event string, prob float64) {
 
 	n.marg.AddPair(event, prob)
 	n.UpdateState(event)
-	n.margSet = true
 }
 
 func (n *Node) SetCond(event string, givenState map[string]string, prob float64) {
@@ -72,12 +65,6 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 		return
 	}
 
-	// if n.margSet && n.jointSet {
-	// 	fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
-
-	// 	return
-	// }
-
 	// Update event into conditional probility
 	n.cond.AddPair(n.encodeCond(event, givenState), prob)
 
@@ -90,9 +77,6 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 			parent.UpdateState(pState)
 		}
 	}
-
-	// Flag as set in joint probability
-	n.condSet = true
 }
 
 func (n *Node) SetJoint(prob float64, events map[string]string) {
@@ -102,7 +86,18 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 	}
 
 	// Check if the node has been set as
-	if n.margSet && n.condSet {
+	_, margExist := n.marg.space[events[n.name]]
+
+	// Duplicate events and except the node event to get parents
+	parents := make(map[string]string)
+	for k, v := range events {
+		if k != n.name {
+			parents[k] = v
+		}
+	}
+	_, condExist := n.cond.space[n.encodeCond(events[n.name], parents)]
+
+	if margExist && condExist {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and conditional probability specified")
 
 		return
@@ -118,7 +113,6 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 			child.UpdateState(state)
 		}
 	}
-	n.margSet = true
 }
 
 func (n *Node) UpdateState(event string) {
@@ -179,13 +173,3 @@ func (n *Node) encodeJoint(events map[string]string) string {
 	// Return encoded as string
 	return encoded.String()
 }
-
-// for pName, pState := range parentState {
-// 		if parent, isExist := n.parents[pName]; isExist {
-// 			parent.UpdateState(pState)
-// 		}
-
-// 		pList = append(pList, pState)
-// 	}
-
-// 	slices.Sort(pList)
