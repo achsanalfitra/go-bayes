@@ -20,10 +20,6 @@ type Node struct {
 	jointSet bool
 }
 
-type BayesNet struct {
-	Nodes map[string]*Node
-}
-
 func NewNode(name string) *Node {
 	return &Node{
 		name:     name,
@@ -65,11 +61,22 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	}
 
 	// Check if marginal and joint are already set
-	if n.margSet && n.jointSet {
+	_, margExist := n.marg.space[event]
+
+	givenState[n.name] = event
+	_, jointExist := n.joint.space[n.encodeJoint(givenState)]
+
+	if margExist && jointExist {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
 
 		return
 	}
+
+	// if n.margSet && n.jointSet {
+	// 	fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
+
+	// 	return
+	// }
 
 	// Update event into conditional probility
 	n.cond.AddPair(n.encodeCond(event, givenState), prob)
@@ -89,10 +96,12 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 }
 
 func (n *Node) SetJoint(prob float64, events map[string]string) {
+	// Check if there is only one event listed
 	if len(events) == 1 {
 		fmt.Println("Cant have 1 event joint probability bro")
 	}
 
+	// Check if the node has been set as
 	if n.margSet && n.condSet {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and conditional probability specified")
 
@@ -113,6 +122,7 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 }
 
 func (n *Node) UpdateState(event string) {
+	// Add state used in setting methods to the state list in the node
 	if !slices.Contains(n.states, event) {
 		n.states = append(n.states, event)
 	}
