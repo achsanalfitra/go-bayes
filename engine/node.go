@@ -171,7 +171,7 @@ func (n *Node) UpdateState(event string, prob float64, probType string, name *st
 			n.context.Joint[*name][event] = prob
 		}
 	}
-	if _, eventExist := n.states; !isExist {
+	if _, eventExist := n.states[event]; !eventExist {
 		n.states[event] = true
 	}
 }
