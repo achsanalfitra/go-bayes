@@ -40,9 +40,9 @@ func (n *Node) SetMarg(event string, prob float64) {
 
 		return
 	}
-
-	n.marg.AddPair(event, prob)
-	n.UpdateState(event, prob, "marginal", nil)
+	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
+	n.marg.AddPair(encodedMarg, prob)
+	n.UpdateState(encodedMarg, prob, "marginal", nil)
 }
 
 func (n *Node) SetCond(event string, givenState map[string]string, prob float64) {
@@ -132,6 +132,8 @@ func (n *Node) UpdateState(event string, prob float64, probType string, name *st
 func (n *Node) encodeCond(event string, parents map[string]string) string {
 	// Create encoded as strings.Builder
 	var encoded strings.Builder
+	encoded.WriteString(n.name)
+	encoded.WriteString("=")
 	encoded.WriteString(event)
 	encoded.WriteString(" |")
 
@@ -179,4 +181,22 @@ func (n *Node) encodeJoint(events map[string]string) string {
 
 	// Return encoded as string
 	return encoded.String()
+}
+
+func (n *Node) AddParent(parent *Node) {
+	// Check if the parent already exists in the parents map
+	if _, exists := n.parents[parent.name]; exists {
+		fmt.Println("Parent node", parent.name, "already added.")
+		return
+	}
+
+	// Add the parent to the node's parent map
+	n.parents[parent.name] = parent
+	// Optionally, also add this node as a child of the parent
+	if n.children == nil {
+		n.children = make(map[string]*Node)
+	}
+	n.children[n.name] = n
+
+	fmt.Println("Added parent", parent.name, "to node", n.name)
 }

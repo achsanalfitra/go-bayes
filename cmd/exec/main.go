@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"github.com/achsanalfitra/go-bayes/engine"
 )
 
 func main() {
-	fmt.Println("Welcome to the Go Bayes project")
+	engine.Test()
 }
