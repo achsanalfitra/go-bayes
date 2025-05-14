@@ -7,8 +7,8 @@ import (
 )
 
 type Node struct {
+	context  *ProbabilityContext
 	name     string
-	states   map[string]bool
 	marg     *ProbabilitySpace
 	cond     *ProbabilitySpace
 	joint    *ProbabilitySpace
@@ -17,10 +17,10 @@ type Node struct {
 	cpt      map[string]float64
 }
 
-func NewNode(name string) *Node {
+func NewNode(context *ProbabilityContext, name string) *Node {
 	return &Node{
 		name:     name,
-		states:   make(map[string]bool),
+		context:  context,
 		marg:     NewProbabilitySpace(),
 		cond:     NewProbabilitySpace(),
 		joint:    NewProbabilitySpace(),
@@ -42,7 +42,7 @@ func (n *Node) SetMarg(event string, prob float64) {
 	}
 
 	n.marg.AddPair(event, prob)
-	n.UpdateState(event)
+	n.UpdateState(event, prob, "marginal", nil)
 }
 
 func (n *Node) SetCond(event string, givenState map[string]string, prob float64) {
@@ -54,10 +54,14 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	}
 
 	// Check if marginal and joint are already set
-	_, margExist := n.marg.space[event]
+	localJointState := make(map[string]string)
+	for name, state := range givenState {
+		localJointState[name] = state
+	}
+	localJointState[n.name] = event
 
-	givenState[n.name] = event
-	_, jointExist := n.joint.space[n.encodeJoint(givenState)]
+	_, margExist := n.context.Marginal[n.name][event]
+	_, jointExist := n.context.Joint[n.name][n.encodeJoint(localJointState)]
 
 	if margExist && jointExist {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
@@ -69,14 +73,7 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	n.cond.AddPair(n.encodeCond(event, givenState), prob)
 
 	// Update state into node states
-	n.UpdateState(event)
-
-	// Update parent states that are used in this setting method
-	for pName, pState := range givenState {
-		if parent, isExist := n.parents[pName]; isExist {
-			parent.UpdateState(pState)
-		}
-	}
+	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", nil)
 }
 
 func (n *Node) SetJoint(prob float64, events map[string]string) {
@@ -86,7 +83,7 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 	}
 
 	// Check if the node has been set as
-	_, margExist := n.marg.space[events[n.name]]
+	_, margExist := n.context.Marginal[n.name][events[n.name]]
 
 	// Duplicate events and except the node event to get parents
 	parents := make(map[string]string)
@@ -95,7 +92,7 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 			parents[k] = v
 		}
 	}
-	_, condExist := n.cond.space[n.encodeCond(events[n.name], parents)]
+	_, condExist := n.context.Conditional[n.name][n.encodeCond(events[n.name], parents)]
 
 	if margExist && condExist {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and conditional probability specified")
@@ -104,21 +101,31 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 	}
 
 	n.joint.AddPair(n.encodeJoint(events), prob)
-	for name, state := range events {
-		if parent, isExist := n.parents[name]; isExist {
-			parent.UpdateState(state)
-		}
 
-		if child, isExist := n.children[name]; isExist {
-			child.UpdateState(state)
-		}
+	for name := range events {
+		n.UpdateState(n.encodeJoint(events), prob, "joint", &name)
 	}
 }
 
-func (n *Node) UpdateState(event string) {
+func (n *Node) UpdateState(event string, prob float64, probType string, name *string) {
+	if name == nil {
+		name = &n.name
+	}
+
 	// Add state used in setting methods to the state list in the node
-	if _, isExist := n.states[event]; !isExist {
-		n.states[event] = true
+	switch probType {
+	case "marg":
+		if _, isExist := n.context.Marginal[*name][event]; !isExist {
+			n.context.Marginal[*name][event] = prob
+		}
+	case "cond":
+		if _, isExist := n.context.Conditional[*name][event]; !isExist {
+			n.context.Conditional[*name][event] = prob
+		}
+	case "joint":
+		if _, isExist := n.context.Joint[*name][event]; !isExist {
+			n.context.Joint[*name][event] = prob
+		}
 	}
 }
 
