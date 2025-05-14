@@ -9,6 +9,7 @@ import (
 type Node struct {
 	context  *ProbabilityContext
 	name     string
+	states   map[string]bool
 	marg     *ProbabilitySpace
 	cond     *ProbabilitySpace
 	joint    *ProbabilitySpace
@@ -21,6 +22,7 @@ func NewNode(context *ProbabilityContext, name string) *Node {
 	return &Node{
 		name:     name,
 		context:  context,
+		states:   make(map[string]bool),
 		marg:     NewProbabilitySpace(),
 		cond:     NewProbabilitySpace(),
 		joint:    NewProbabilitySpace(),
@@ -43,6 +45,20 @@ func (n *Node) SetMarg(event string, prob float64) {
 	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
 	n.marg.AddPair(encodedMarg, prob)
 	n.UpdateState(encodedMarg, prob, "marginal", nil)
+}
+
+func (n *Node) CompleteMarg() {
+	if n.marg.TotalProb() < 1 && len(n.marg.space) > 0 {
+		encodedMarg := fmt.Sprintf("%s=%s", n.name, "_")
+		n.marg.AddPair(encodedMarg, 1-n.marg.TotalProb())
+		n.UpdateState(encodedMarg, 1-n.marg.TotalProb(), "marginal", nil)
+	}
+}
+
+func (n *Node) NormalizeMarg() {
+	if n.marg.TotalProb() != 1 && len(n.marg.space) > 0 {
+		n.marg.Normalize()
+	}
 }
 
 func (n *Node) SetCond(event string, givenState map[string]string, prob float64) {
@@ -75,6 +91,34 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	// Update state into node states
 	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", nil)
 }
+
+// func (n *Node) CompleteCond() {
+// 	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
+// 		parentStates := make(map[string]map[string]bool)
+// 		givenStates := make(map[string]map[string]string)
+
+// 		for _, parent := range n.parents {
+// 			for state, _ := range n.parents[parent.name].states {
+// 				parentStates[parent.name][state] = true
+// 			}
+
+// 		}
+
+// 		// 	for _, parent := range n.parents {
+// 		// 		for _, innerParent := range
+
+// 		// 		n.cond.AddPair(n.encodeCond("_", givenState), 1-n.cond.TotalProb())
+// 		// 		n.UpdateState(n.encodeCond("_", givenState), 1-n.cond.TotalProb(), "conditional", nil)
+// 		// 	}
+// 		// }
+// 	}
+// }
+
+// func (n *Node) NormalizeCond() {
+// 	if n.cond.TotalProb() != 1 && len(n.cond.space) > 0 {
+// 		n.cond.Normalize()
+// 	}
+// }
 
 func (n *Node) SetJoint(prob float64, events map[string]string) {
 	// Check if there is only one event listed
@@ -126,6 +170,9 @@ func (n *Node) UpdateState(event string, prob float64, probType string, name *st
 		if _, isExist := n.context.Joint[*name][event]; !isExist {
 			n.context.Joint[*name][event] = prob
 		}
+	}
+	if _, eventExist := n.states; !isExist {
+		n.states[event] = true
 	}
 }
 
