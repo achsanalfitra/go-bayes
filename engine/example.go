@@ -5,10 +5,15 @@ import "fmt"
 func Test() {
 	context := BuildContext()
 
+	network := NewNetwork(context, "Test")
+
 	n1 := NewNode(context, "A")
 	n2 := NewNode(context, "B")
 
-	n2.AddParent(n1)
+	network.AddNode(n1)
+	network.AddNode(n2)
+
+	network.AddEdge(n1, n2)
 
 	n1.SetMarg("Wet", 0.64)
 
