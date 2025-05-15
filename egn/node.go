@@ -47,7 +47,7 @@ func (n *Node) SetMarg(event string, prob float64) {
 		return
 	}
 	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
-	n.marg.AddPair(encodedMarg, prob) // should've been
+	n.marg.AddPair(encodedMarg, prob)
 	n.UpdateState(encodedMarg, prob, "marginal", nil)
 }
 
@@ -74,26 +74,27 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	}
 
 	// Check if marginal and joint are already set
-	localJointState := make(map[string]string)
+	factors := make(map[string]string)
+	factors[n.name] = event
 	for name, state := range givenState {
-		localJointState[name] = state
-	}
-	localJointState[n.name] = event
+		factors[name] = state
+	} // factors stores with format {nodeName : event}
+
+	_, jointExists := n.context.Joint[n.encodeFactors(factors)][n.encodeJoint(factors)]
 
 	_, margExist := n.context.Marginal[n.name][event]
-	_, jointExist := n.context.Joint[n.encodeJoint(localJointState)]
 
-	if margExist && jointExist {
+	if margExist && jointExists {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
 
 		return
 	}
 
 	// Update event into conditional probility
-	n.cond.AddPair(n.encodeCond(event, givenState), prob)
+	n.cond[n.encodeFactors(factors)].AddPair(n.encodeCond(event, givenState), prob)
 
 	// Update state into node states
-	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", &givenState)
+	// n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", &givenState)
 }
 
 func (n *Node) CompleteCond() {
@@ -236,6 +237,28 @@ func (n *Node) encodeParents(parents map[string]string) string {
 		encoded.WriteString("=")
 		encoded.WriteString(parents[pName]) // The map query returns pState
 		if i != len(pNames)-1 {
+			encoded.WriteString(" ") // Add whitespace only if not the last event
+		}
+	}
+
+	return encoded.String()
+}
+
+func (n *Node) encodeFactors(factors map[string]string) string {
+	var encoded strings.Builder
+
+	// Sort factors so it is deterministic
+	names := make([]string, 0, len(factors))
+	for name := range factors {
+		names = append(names, pName)
+	}
+
+	slices.Sort(names)
+
+	// Adding sorted parent state onto encoded in order
+	for i, name := range names {
+		encoded.WriteString(name)
+		if i != len(names)-1 {
 			encoded.WriteString(" ") // Add whitespace only if not the last event
 		}
 	}
