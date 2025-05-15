@@ -6,13 +6,18 @@ import (
 	"strings"
 )
 
+const (
+	Cond  = "conditional"
+	Marg  = "marginal"
+	Joint = "joint"
+)
+
 type Node struct {
 	context  *ProbabilityContext
 	name     string
-	states   map[string]bool
 	marg     *ProbabilitySpace
-	cond     *ProbabilitySpace
-	joint    *ProbabilitySpace
+	cond     map[string]*ProbabilitySpace // format {parentCombinations: space}
+	joint    map[string]*ProbabilitySpace // format {factors: space} where factors are variables including itself
 	parents  map[string]*Node
 	children map[string]*Node
 	cpt      map[string]float64
@@ -22,10 +27,9 @@ func NewNode(context *ProbabilityContext, name string) *Node {
 	return &Node{
 		name:     name,
 		context:  context,
-		states:   make(map[string]bool),
 		marg:     NewProbabilitySpace(),
-		cond:     NewProbabilitySpace(),
-		joint:    NewProbabilitySpace(),
+		cond:     make(map[string]*ProbabilitySpace), // Todo: this is incorrect
+		joint:    make(map[string]*ProbabilitySpace), // Todo: this is incorrect
 		parents:  make(map[string]*Node),
 		children: make(map[string]*Node),
 		cpt:      make(map[string]float64),
@@ -43,7 +47,7 @@ func (n *Node) SetMarg(event string, prob float64) {
 		return
 	}
 	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
-	n.marg.AddPair(encodedMarg, prob)
+	n.marg.AddPair(encodedMarg, prob) // should've been
 	n.UpdateState(encodedMarg, prob, "marginal", nil)
 }
 
@@ -77,7 +81,7 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	localJointState[n.name] = event
 
 	_, margExist := n.context.Marginal[n.name][event]
-	_, jointExist := n.context.Joint[n.name][n.encodeJoint(localJointState)]
+	_, jointExist := n.context.Joint[n.encodeJoint(localJointState)]
 
 	if margExist && jointExist {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
@@ -89,30 +93,47 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	n.cond.AddPair(n.encodeCond(event, givenState), prob)
 
 	// Update state into node states
-	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", nil)
+	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", &givenState)
 }
 
-// func (n *Node) CompleteCond() {
-// 	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
-// 		parentStates := make(map[string]map[string]bool)
-// 		givenStates := make(map[string]map[string]string)
+func (n *Node) CompleteCond() {
+	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
+		var pNames []string
 
-// 		for _, parent := range n.parents {
-// 			for state, _ := range n.parents[parent.name].states {
-// 				parentStates[parent.name][state] = true
-// 			}
+		for _, parent := range n.parents {
+			pNames = append(pNames, parent.name)
+		}
 
-// 		}
+		for _, pName := range pNames {
+			if len(n.parents[pName].parents) > 0 {
+				// Insert adding complement condition for each parent combinations
+			} else {
+				n.cond.AddPair(encodedMarg, 1-n.marg.TotalProb())
+				n.UpdateState(encodedMarg, 1-n.marg.TotalProb(), "marginal", nil)
+			}
+		}
+	}
 
-// 		// 	for _, parent := range n.parents {
-// 		// 		for _, innerParent := range
+	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
+		parentStates := make(map[string]map[string]bool)
+		givenStates := make(map[string]map[string]string)
 
-// 		// 		n.cond.AddPair(n.encodeCond("_", givenState), 1-n.cond.TotalProb())
-// 		// 		n.UpdateState(n.encodeCond("_", givenState), 1-n.cond.TotalProb(), "conditional", nil)
-// 		// 	}
-// 		// }
-// 	}
-// }
+		for _, parent := range n.parents {
+			for state, _ := range n.parents[parent.name].states {
+				parentStates[parent.name][state] = true
+			}
+
+		}
+
+		// 	for _, parent := range n.parents {
+		// 		for _, innerParent := range
+
+		// 		n.cond.AddPair(n.encodeCond("_", givenState), 1-n.cond.TotalProb())
+		// 		n.UpdateState(n.encodeCond("_", givenState), 1-n.cond.TotalProb(), "conditional", nil)
+		// 	}
+		// }
+	}
+}
 
 // func (n *Node) NormalizeCond() {
 // 	if n.cond.TotalProb() != 1 && len(n.cond.space) > 0 {
@@ -146,33 +167,27 @@ func (n *Node) SetJoint(prob float64, events map[string]string) {
 
 	n.joint.AddPair(n.encodeJoint(events), prob)
 
-	for name := range events {
-		n.UpdateState(n.encodeJoint(events), prob, "joint", &name)
-	}
+	n.UpdateState(n.encodeJoint(events), prob, "joint", nil)
 }
 
-func (n *Node) UpdateState(event string, prob float64, probType string, name *string) {
-	if name == nil {
-		name = &n.name
-	}
+func (n *Node) UpdateState(event string, prob float64, probType string, parentState *map[string]string) {
 
 	// Add state used in setting methods to the state list in the node
 	switch probType {
 	case "marg":
-		if _, isExist := n.context.Marginal[*name][event]; !isExist {
-			n.context.Marginal[*name][event] = prob
+		if _, isExist := n.context.Marginal[n.name][event]; !isExist {
+			n.context.Marginal[n.name][event] = prob
 		}
 	case "cond":
-		if _, isExist := n.context.Conditional[*name][event]; !isExist {
-			n.context.Conditional[*name][event] = prob
+		if parentState != nil {
+			if _, isExist := n.context.Conditional[n.name][n.encodeParents(*parentState)][event]; !isExist {
+				n.context.Conditional[n.name][n.encodeParents(*parentState)][event] = prob
+			}
 		}
 	case "joint":
-		if _, isExist := n.context.Joint[*name][event]; !isExist {
-			n.context.Joint[*name][event] = prob
+		if _, isExist := n.context.Joint[event]; !isExist {
+			n.context.Joint[event] = prob
 		}
-	}
-	if _, eventExist := n.states[event]; !eventExist {
-		n.states[event] = true
 	}
 }
 
@@ -201,6 +216,30 @@ func (n *Node) encodeCond(event string, parents map[string]string) string {
 	}
 
 	// Return encoded as string
+	return encoded.String()
+}
+
+func (n *Node) encodeParents(parents map[string]string) string {
+	var encoded strings.Builder
+
+	// Sort parents so it is deterministic
+	pNames := make([]string, 0, len(parents))
+	for pName := range parents {
+		pNames = append(pNames, pName)
+	}
+
+	slices.Sort(pNames)
+
+	// Adding sorted parent state onto encoded in order
+	for i, pName := range pNames {
+		encoded.WriteString(pName)
+		encoded.WriteString("=")
+		encoded.WriteString(parents[pName]) // The map query returns pState
+		if i != len(pNames)-1 {
+			encoded.WriteString(" ") // Add whitespace only if not the last event
+		}
+	}
+
 	return encoded.String()
 }
 

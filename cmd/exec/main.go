@@ -1,9 +1,13 @@
 package main
 
-import (
-	"github.com/achsanalfitra/go-bayes/engine"
-)
+import "fmt"
 
 func main() {
-	engine.Test()
+	aMap := make(map[string]struct{})
+
+	aMap["a"] = struct{}{}
+
+	for key, _ := range aMap {
+		fmt.Print(key)
+	}
 }
