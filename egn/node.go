@@ -28,8 +28,8 @@ func NewNode(context *ProbabilityContext, name string) *Node {
 		name:     name,
 		context:  context,
 		marg:     NewProbabilitySpace(),
-		cond:     make(map[string]*ProbabilitySpace), // Todo: this is incorrect
-		joint:    make(map[string]*ProbabilitySpace), // Todo: this is incorrect
+		cond:     make(map[string]*ProbabilitySpace),
+		joint:    make(map[string]*ProbabilitySpace),
 		parents:  make(map[string]*Node),
 		children: make(map[string]*Node),
 		cpt:      make(map[string]float64),
@@ -80,17 +80,27 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 		factors[name] = state
 	} // factors stores with format {nodeName : event}
 
-	_, jointExists := n.context.Joint[n.encodeFactors(factors)][n.encodeJoint(factors)]
+	// Check if joint map exists
+	jointFactorsMap, jointOk := n.context.Joint[n.encodeFactors(factors)]
+	jointExists := jointOk && jointFactorsMap != nil && jointFactorsMap[n.encodeJoint(factors)] != struct{}{}
 
-	_, margExist := n.context.Marginal[n.name][event]
+	// Check if marginal map exists
+	margMap, margOk := n.context.Marginal[n.name]
+	margExists := margOk && margMap[event] != struct{}{}
 
-	if margExist && jointExists {
+	if margExists && jointExists {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
 
 		return
 	}
 
 	// Update event into conditional probility
+
+	// Create new probability space if it doesn't exist
+	key := n.encodeParents(givenState)
+	if n.cond[key] == nil {
+		n.cond[key] = NewProbabilitySpace()
+	}
 	n.cond[n.encodeFactors(factors)].AddPair(n.encodeCond(event, givenState), prob)
 
 	// Update state into node states
