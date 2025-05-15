@@ -107,34 +107,34 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", &givenState)
 }
 
-func (n *Node) CompleteCond() {
-	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
-		var pNames []string
+// func (n *Node) CompleteCond() {
+// 	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
+// 		var pNames []string
 
-		for _, parent := range n.parents {
-			pNames = append(pNames, parent.name)
-		}
+// 		for _, parent := range n.parents {
+// 			pNames = append(pNames, parent.name)
+// 		}
 
-		for _, pName := range pNames {
-			if len(n.parents[pName].parents) > 0 {
-				// Insert adding complement condition for each parent combinations
-			} else {
-				n.cond.AddPair(encodedMarg, 1-n.marg.TotalProb())
-				n.UpdateState(encodedMarg, 1-n.marg.TotalProb(), "marginal", nil)
-			}
-		}
-	}
+// 		for _, pName := range pNames {
+// 			if len(n.parents[pName].parents) > 0 {
+// 				// Insert adding complement condition for each parent combinations
+// 			} else {
+// 				n.cond.AddPair(encodedMarg, 1-n.marg.TotalProb())
+// 				n.UpdateState(encodedMarg, 1-n.marg.TotalProb(), "marginal", nil)
+// 			}
+// 		}
+// 	}
 
-	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
-		parentStates := make(map[string]map[string]bool)
-		givenStates := make(map[string]map[string]string)
+// 	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
+// 		parentStates := make(map[string]map[string]bool)
+// 		givenStates := make(map[string]map[string]string)
 
-		for _, parent := range n.parents {
-			for state, _ := range n.parents[parent.name].states {
-				parentStates[parent.name][state] = true
-			}
+// 		for _, parent := range n.parents {
+// 			for state, _ := range n.parents[parent.name].states {
+// 				parentStates[parent.name][state] = true
+// 			}
 
-		}
+// 		}
 
 		// 	for _, parent := range n.parents {
 		// 		for _, innerParent := range
@@ -186,19 +186,18 @@ func (n *Node) UpdateState(event string, prob float64, probType string, parentSt
 	// Add state used in setting methods to the state list in the node
 	switch probType {
 	case "marg":
-		if _, isExist := n.context.Marginal[n.name][event]; !isExist {
-			n.context.Marginal[n.name][event] = prob
+		// Ensure inner map exists
+		if _, ok := n.context.Marginal[n.name]; !ok {
+			n.context.Marginal[n.name] = make(map[string]struct{})
 		}
+
+		n.context.Marginal[n.name][event] = struct{}{}
+
 	case "cond":
 		if parentState != nil {
 			nodeName := n.name
 			parentKey := n.encodeParents(*parentState)
 			eventKey := event
-
-			// Ensure outer map exists
-			if n.context.Conditional == nil {
-				n.context.Conditional = make(map[string]map[string]map[string]struct{})
-			}
 
 			// Ensure 2nd-level map exists for nodeName
 			if _, ok := n.context.Conditional[nodeName]; !ok {
