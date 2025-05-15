@@ -104,7 +104,7 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 	n.cond[n.encodeFactors(factors)].AddPair(n.encodeCond(event, givenState), prob)
 
 	// Update state into node states
-	// n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", &givenState)
+	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", &givenState)
 }
 
 func (n *Node) CompleteCond() {
@@ -191,9 +191,27 @@ func (n *Node) UpdateState(event string, prob float64, probType string, parentSt
 		}
 	case "cond":
 		if parentState != nil {
-			if _, isExist := n.context.Conditional[n.name][n.encodeParents(*parentState)][event]; !isExist {
-				n.context.Conditional[n.name][n.encodeParents(*parentState)][event] = prob
+			nodeName := n.name
+			parentKey := n.encodeParents(*parentState)
+			eventKey := event
+
+			// Ensure outer map exists
+			if n.context.Conditional == nil {
+				n.context.Conditional = make(map[string]map[string]map[string]struct{})
 			}
+
+			// Ensure 2nd-level map exists for nodeName
+			if _, ok := n.context.Conditional[nodeName]; !ok {
+				n.context.Conditional[nodeName] = make(map[string]map[string]struct{})
+			}
+
+			// Ensure 3rd-level map exists for parentKey
+			if _, ok := n.context.Conditional[nodeName][parentKey]; !ok {
+				n.context.Conditional[nodeName][parentKey] = make(map[string]struct{})
+			}
+
+			// Finally, add the event key
+			n.context.Conditional[nodeName][parentKey][eventKey] = struct{}{}
 		}
 	case "joint":
 		if _, isExist := n.context.Joint[event]; !isExist {
