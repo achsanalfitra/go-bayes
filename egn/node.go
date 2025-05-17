@@ -136,15 +136,15 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 
 // 		}
 
-		// 	for _, parent := range n.parents {
-		// 		for _, innerParent := range
+// 	for _, parent := range n.parents {
+// 		for _, innerParent := range
 
-		// 		n.cond.AddPair(n.encodeCond("_", givenState), 1-n.cond.TotalProb())
-		// 		n.UpdateState(n.encodeCond("_", givenState), 1-n.cond.TotalProb(), "conditional", nil)
-		// 	}
-		// }
-	}
-}
+// 		n.cond.AddPair(n.encodeCond("_", givenState), 1-n.cond.TotalProb())
+// 		n.UpdateState(n.encodeCond("_", givenState), 1-n.cond.TotalProb(), "conditional", nil)
+// 	}
+// }
+// 	}
+// }
 
 // func (n *Node) NormalizeCond() {
 // 	if n.cond.TotalProb() != 1 && len(n.cond.space) > 0 {
@@ -152,33 +152,61 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 // 	}
 // }
 
-func (n *Node) SetJoint(prob float64, events map[string]string) {
+func (n *Node) SetJoint(events map[string]string, prob float64) {
 	// Check if there is only one event listed
 	if len(events) == 1 {
 		fmt.Println("Cant have 1 event joint probability bro")
 	}
 
-	// Check if the node has been set as
-	_, margExist := n.context.Marginal[n.name][events[n.name]]
+	// Check marginal inner map
+	if _, ok := n.context.Marginal[n.name]; !ok {
+		n.context.Marginal[n.name] = make(map[string]struct{})
+	}
 
-	// Duplicate events and except the node event to get parents
-	parents := make(map[string]string)
-	for k, v := range events {
-		if k != n.name {
-			parents[k] = v
+	margMap, margOk := n.context.Marginal[n.name]
+	_, margEventOk := margMap[events[n.name]]
+	margExists := margOk && margEventOk
+
+	// Check if the node has conditional probability
+	// Get parentCombination
+	parentCombination := make(map[string]string)
+	for parent, event := range events {
+		if parent != n.name {
+			parentCombination[parent] = event // Format {parentCombination: event}
 		}
 	}
-	_, condExist := n.context.Conditional[n.name][n.encodeCond(events[n.name], parents)]
 
-	if margExist && condExist {
+	parentCombinations := n.encodeParents(parentCombination) // Format "parentCombinations"
+
+	// Ensure 2nd-level map exists for nodeName
+	if _, ok := n.context.Conditional[n.name]; !ok {
+		n.context.Conditional[n.name] = make(map[string]map[string]struct{})
+	}
+
+	// Ensure 3rd-level map exists for parentKey
+	if _, ok := n.context.Conditional[n.name][parentCombinations]; !ok {
+		n.context.Conditional[n.name][parentCombinations] = make(map[string]struct{})
+	}
+
+	condMap, condOk := n.context.Conditional[n.name][parentCombinations]
+	_, condEventOk := condMap[events[n.name]]
+	condExists := condOk && condEventOk
+
+	if margExists && condExists {
 		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and conditional probability specified")
 
 		return
 	}
 
-	n.joint.AddPair(n.encodeJoint(events), prob)
+	// Create new probability space if it doesn't exist
+	key := n.encodeFactors(events)
+	jointEvents := n.encodeJoint(events)
+	if n.joint[key] == nil {
+		n.joint[key] = NewProbabilitySpace()
+	}
+	n.joint[key].AddPair(jointEvents, prob)
 
-	n.UpdateState(n.encodeJoint(events), prob, "joint", nil)
+	n.UpdateState(jointEvents, prob, "joint", nil)
 }
 
 func (n *Node) UpdateState(event string, prob float64, probType string, parentState *map[string]string) {
@@ -213,9 +241,9 @@ func (n *Node) UpdateState(event string, prob float64, probType string, parentSt
 			n.context.Conditional[nodeName][parentKey][eventKey] = struct{}{}
 		}
 	case "joint":
-		if _, isExist := n.context.Joint[event]; !isExist {
-			n.context.Joint[event] = prob
-		}
+		// if _, isExist := n.context.Joint[event]; !isExist {
+		// n.context.Joint[event] = prob
+		// }
 	}
 }
 
@@ -277,7 +305,7 @@ func (n *Node) encodeFactors(factors map[string]string) string {
 	// Sort factors so it is deterministic
 	names := make([]string, 0, len(factors))
 	for name := range factors {
-		names = append(names, pName)
+		names = append(names, name)
 	}
 
 	slices.Sort(names)

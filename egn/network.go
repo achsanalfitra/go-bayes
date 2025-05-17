@@ -37,13 +37,13 @@ func (n *Network) AddEdge(parent *Node, child *Node) {
 		n.edges[parent.name] = make(map[string]bool)
 	}
 
-	if _, isRoot := n.roots[child.name]; isRoot {
+	if n.roots[child.name] != nil {
 		delete(n.roots, child.name)
 	}
 
 	if _, isChild := n.edges[parent.name][child.name]; !isChild {
 		n.edges[parent.name][child.name] = true
-		n.nodes[child.name].AddParent(n.nodes[parent.name])
+		// n.nodes[child.name].AddParent(n.nodes[parent.name])
 	}
 }
 
