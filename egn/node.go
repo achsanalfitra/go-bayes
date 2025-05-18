@@ -101,7 +101,7 @@ func (n *Node) CompleteMarg() {
 	if n.marg.TotalProb() < 1 && len(n.marg.space) > 0 {
 		encodedMarg := fmt.Sprintf("%s=%s", n.name, "_")
 		n.marg.AddPair(encodedMarg, 1-n.marg.TotalProb())
-		n.UpdateState(encodedMarg, 1-n.marg.TotalProb(), "marginal", nil)
+		n.UpdateState(encodedMarg, "marginal", nil)
 	}
 }
 
@@ -152,6 +152,27 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 
 	// update probability event to context ledger
 	n.UpdateState(n.encodeCond(event, givenState), "conditional", &givenState)
+
+	return nil
+}
+
+func (n *Node) CompleteCond() error {
+	// check for conditional existence
+	if len(n.context.Conditional) == 0 {
+		return fmt.Errorf("no conditional probability exists for this node")
+	}
+
+	for parentCombinations := range n.context.Conditional {
+		total := n.cond[parentCombinations].TotalProb()
+
+		if total < 1 {
+			decodedParents := n.decodeJoint(parentCombinations)
+			encodedEvents := n.encodeCond("_", decodedParents)
+
+			n.cond[parentCombinations].AddPair(encodedEvents, 1-total)
+			n.UpdateState(encodedEvents, "conditional", &decodedParents)
+		}
+	}
 
 	return nil
 }

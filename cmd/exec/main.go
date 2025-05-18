@@ -4,11 +4,11 @@ import "fmt"
 
 func main() {
 	aMap := make(map[string]map[string]struct{})
-	if _, ok := aMap["water"]; !ok {
-		aMap["water"] = make(map[string]struct{})
-	}
+	// if _, ok := aMap["water"]; !ok {
+	// 	aMap["water"] = make(map[string]struct{})
+	// }
 
-	aMap["water"]["cooled"] = struct{}{}
+	// aMap["water"]["cooled"] = struct{}{}
 
 	// aMap["chill"] = map[string]struct{}{}
 
@@ -36,4 +36,6 @@ func main() {
 	} else {
 		fmt.Println("assignCheck works")
 	}
+
+	fmt.Println(len(aMap))
 }
