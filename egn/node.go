@@ -256,40 +256,51 @@ func (n *Node) SetJoint(events map[string]string, prob float64) error {
 }
 
 func (n *Node) UpdateState(event string, probType string, parentState *map[string]string) {
+	nodeName := n.name
 
 	// Add state used in setting methods to the state list in the node
 	switch probType {
 	case "marg":
-		// Ensure inner map exists
-		if _, ok := n.context.Marginal[n.name]; !ok {
-			n.context.Marginal[n.name] = make(map[string]struct{})
+		// check outer map existence
+		if _, ok := n.context.Marginal[nodeName]; !ok {
+			n.context.Marginal[nodeName] = make(map[string]struct{})
 		}
 
-		n.context.Marginal[n.name][event] = struct{}{}
+		if _, isExist := n.context.Marginal[nodeName][event]; !isExist {
+			n.context.Marginal[nodeName][event] = struct{}{}
+		}
 
 	case "cond":
 		if parentState != nil {
-			nodeName := n.name
-			parentKey := n.encodeParents(*parentState)
-			eventKey := event
+			encodedParents := n.encodeParents(*parentState)
 
-			// Ensure 2nd-level map exists for nodeName
+			// check outer map existence
 			if _, ok := n.context.Conditional[nodeName]; !ok {
 				n.context.Conditional[nodeName] = make(map[string]map[string]struct{})
 			}
 
-			// Ensure 3rd-level map exists for parentKey
-			if _, ok := n.context.Conditional[nodeName][parentKey]; !ok {
-				n.context.Conditional[nodeName][parentKey] = make(map[string]struct{})
+			// check middle-layer map existence
+			if _, ok := n.context.Conditional[nodeName][encodedParents]; !ok {
+				n.context.Conditional[nodeName][encodedParents] = make(map[string]struct{})
 			}
 
-			// Finally, add the event key
-			n.context.Conditional[nodeName][parentKey][eventKey] = struct{}{}
+			// check the event existence, else add
+			if _, isExist := n.context.Conditional[nodeName][encodedParents][event]; !isExist {
+				n.context.Conditional[nodeName][encodedParents][event] = struct{}{}
+			}
 		}
 	case "joint":
-		// if _, isExist := n.context.Joint[event]; !isExist {
-		// n.context.Joint[event] = prob
-		// }
+		decodedJoint := n.decodeJoint(event)
+		encodedFactors := n.encodeFactors(decodedJoint)
+
+		// check outer map existence
+		if _, ok := n.context.Joint[encodedFactors]; !ok {
+			n.context.Joint[encodedFactors] = make(map[string]struct{})
+		}
+
+		if _, isExist := n.context.Joint[encodedFactors][event]; !isExist {
+			n.context.Joint[encodedFactors][event] = struct{}{}
+		}
 	}
 }
 
@@ -421,6 +432,18 @@ func (n *Node) decodeCond(encodedCond string) map[string]string {
 	parentPairs := strings.Fields(pipeRemoved[1]) // parentPair = ["B=b", "C=c"], split on whitespace with strings.Fields()
 	for _, parent := range parentPairs {          // parent = ["B=b"]
 		pair := strings.Split(parent, "=") // pair = ["B", "b"]
+		output[pair[0]] = pair[1]
+	}
+
+	return output
+}
+
+func (n *Node) decodeJoint(encodedJoint string) map[string]string {
+	output := make(map[string]string)
+
+	factorPairs := strings.Fields(encodedJoint) // factorPairs = ["A=a", "B=b"], split on whitespace with strings.Fields()
+	for _, factor := range factorPairs {        // parent = ["A=a"]
+		pair := strings.Split(factor, "=") // pair = ["A", "a"]
 		output[pair[0]] = pair[1]
 	}
 
