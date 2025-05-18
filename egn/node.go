@@ -37,19 +37,64 @@ func NewNode(context *ProbabilityContext, name string) *Node {
 	}
 }
 
-func (n *Node) SetMarg(event string, prob float64) {
+func (n *Node) SetMargRoot(event string, prob float64) error {
 	if len(n.parents) > 0 {
-		fmt.Println("Error: you can't specify marginal probability since the node", n.name, "these parents")
-		for _, parent := range n.parents {
-			fmt.Print(parent.name, " ")
-		}
-		fmt.Printf("\n")
-
-		return
+		return fmt.Errorf("can't specify marginal since the node %s already has at least one parent", n.name)
 	}
+
+	// encode marginal probability event as "A=a"
 	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
+
+	// add probability pair to node
 	n.marg.AddPair(encodedMarg, prob)
-	n.UpdateState(encodedMarg, prob, "marginal", nil)
+
+	// update probability event to context ledger
+	n.UpdateState(encodedMarg, "marginal", nil)
+
+	return nil
+}
+
+func (n *Node) SetMarg(event string, prob float64) error {
+	if len(n.parents) > 0 {
+		return fmt.Errorf("can't specify marginal since the node %s already has at least one parent", n.name)
+	}
+
+	// check if conditional exists
+	condMap, condExists := n.context.Conditional[n.name]
+
+	// check if joint exists
+	// decode factors from conditional
+
+	if condExists {
+		for parentCombinations := range condMap {
+			extractedParentCombinations := n.decodeCond(parentCombinations)
+
+			// initialize initialMap per loop
+			initialMap := map[string]string{n.name: event}
+
+			// append current parent combination into initial map
+			for parent, state := range extractedParentCombinations {
+				initialMap[parent] = state
+			}
+
+			encodedFactors := n.encodeFactors(initialMap) // format "A B C"
+
+			if _, jointExists := n.context.Joint[encodedFactors]; jointExists {
+				return fmt.Errorf("joint probability already specified for factors %s", encodedFactors)
+			}
+		}
+	}
+
+	// encode marginal probability event as "A=a"
+	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
+
+	// add probability pair to node
+	n.marg.AddPair(encodedMarg, prob)
+
+	// update probability event to context ledger
+	n.UpdateState(encodedMarg, "marginal", nil)
+
+	return nil
 }
 
 func (n *Node) CompleteMarg() {
@@ -373,4 +418,20 @@ func (n *Node) AddParent(parent *Node) {
 	n.children[n.name] = n
 
 	fmt.Println("Added parent", parent.name, "to node", n.name)
+}
+
+func (n *Node) decodeCond(encodedCond string) map[string]string {
+	output := make(map[string]string)
+
+	pipeRemoved := strings.Split(encodedCond, " | ") // current ["A=a", "B=b C=c"]
+	eventPair := strings.Split(pipeRemoved[0], "=")  // eventPair = ["A", "a"]
+	output[eventPair[0]] = eventPair[1]
+
+	parentPairs := strings.Fields(pipeRemoved[1]) // parentPair = ["B=b", "C=c"], split on whitespace with strings.Fields()
+	for _, parent := range parentPairs {          // parent = ["B=b"]
+		pair := strings.Split(parent, "=") // pair = ["B", "b"]
+		output[pair[0]] = pair[1]
+	}
+
+	return output
 }
