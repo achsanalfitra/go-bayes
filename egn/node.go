@@ -177,50 +177,22 @@ func (n *Node) CompleteCond() error {
 	return nil
 }
 
-// func (n *Node) CompleteCond() {
-// 	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
-// 		var pNames []string
+func (n *Node) NormalizeCond() error {
+	// check for conditional existence
+	if len(n.context.Conditional) == 0 {
+		return fmt.Errorf("no conditional probability exists for this node")
+	}
 
-// 		for _, parent := range n.parents {
-// 			pNames = append(pNames, parent.name)
-// 		}
+	for parentCombinations := range n.context.Conditional {
+		total := n.cond[parentCombinations].TotalProb()
 
-// 		for _, pName := range pNames {
-// 			if len(n.parents[pName].parents) > 0 {
-// 				// Insert adding complement condition for each parent combinations
-// 			} else {
-// 				n.cond.AddPair(encodedMarg, 1-n.marg.TotalProb())
-// 				n.UpdateState(encodedMarg, 1-n.marg.TotalProb(), "marginal", nil)
-// 			}
-// 		}
-// 	}
+		if total != 1 {
+			n.cond[parentCombinations].Normalize()
+		}
 
-// 	if n.cond.TotalProb() < 1 && len(n.cond.space) > 0 {
-// 		parentStates := make(map[string]map[string]bool)
-// 		givenStates := make(map[string]map[string]string)
-
-// 		for _, parent := range n.parents {
-// 			for state, _ := range n.parents[parent.name].states {
-// 				parentStates[parent.name][state] = true
-// 			}
-
-// 		}
-
-// 	for _, parent := range n.parents {
-// 		for _, innerParent := range
-
-// 		n.cond.AddPair(n.encodeCond("_", givenState), 1-n.cond.TotalProb())
-// 		n.UpdateState(n.encodeCond("_", givenState), 1-n.cond.TotalProb(), "conditional", nil)
-// 	}
-// }
-// 	}
-// }
-
-// func (n *Node) NormalizeCond() {
-// 	if n.cond.TotalProb() != 1 && len(n.cond.space) > 0 {
-// 		n.cond.Normalize()
-// 	}
-// }
+	}
+	return nil
+}
 
 func (n *Node) SetJoint(events map[string]string, prob float64) error {
 	// Check if there is only one event listed
