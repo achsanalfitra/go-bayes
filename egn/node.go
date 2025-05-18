@@ -201,26 +201,37 @@ func (n *Node) SetCond(event string, givenState map[string]string, prob float64)
 // 	}
 // }
 
-func (n *Node) SetJoint(events map[string]string, prob float64) {
+func (n *Node) SetJoint(events map[string]string, prob float64) error {
 	// Check if there is only one event listed
 	if len(events) == 1 {
-		fmt.Println("Cant have 1 event joint probability bro")
-		return
+		return fmt.Errorf("joint events cannot be just one event")
 	}
 
-	if len(n.parents) > 0 {
-		fmt.Println("Can't set the joint probability when the node has a parent")
-		return
+	// Check if dependency node exists
+	for nodeName := range events {
+		if _, nodeExists := n.context.NodeName[nodeName]; !nodeExists {
+			return fmt.Errorf("the dependent node %s doesn't exist", nodeName)
+		}
 	}
 
-	// Check marginal inner map
-	if _, ok := n.context.Marginal[n.name]; !ok {
-		n.context.Marginal[n.name] = make(map[string]struct{})
+	// Check if marginal map exists
+	_, margExists := n.context.Marginal[n.name][events[n.name]]
+
+	// Check if conditional exists
+	parentCombinations := make(map[string]string)
+	for parent, state := range events {
+		if parent != n.name {
+			parentCombinations[parent] = state
+		}
 	}
 
-	margMap, margOk := n.context.Marginal[n.name]
-	_, margEventOk := margMap[events[n.name]]
-	margExists := margOk && margEventOk
+	encodedParents := n.encodeParents(parentCombinations)
+
+	_, condExists := n.context.Conditional[n.name][encodedParents]
+
+	if margExists && condExists {
+		return fmt.Errorf("you can't specify conditional probability since the node %s already has marginal and conditional probability specified", n.name)
+	}
 
 	// Check if the node has conditional probability
 	// Get parentCombination
@@ -231,37 +242,17 @@ func (n *Node) SetJoint(events map[string]string, prob float64) {
 		}
 	}
 
-	parentCombinations := n.encodeParents(parentCombination) // Format "parentCombinations"
-
-	// Ensure 1st-level map exists for nodeName
-	if _, ok := n.context.Conditional[n.name]; !ok {
-		n.context.Conditional[n.name] = make(map[string]map[string]struct{})
-	}
-
-	// Ensure 2nd-level map exists for parentKey
-	if _, ok := n.context.Conditional[n.name][parentCombinations]; !ok {
-		n.context.Conditional[n.name][parentCombinations] = make(map[string]struct{})
-	}
-
-	condMap, condOk := n.context.Conditional[n.name][parentCombinations]
-	_, condEventOk := condMap[events[n.name]]
-	condExists := condOk && condEventOk
-
-	if margExists && condExists {
-		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and conditional probability specified")
-
-		return
-	}
-
 	// Create new probability space if it doesn't exist
-	key := n.encodeFactors(events)
+	encodedFactors := n.encodeFactors(events)
 	jointEvents := n.encodeJoint(events)
-	if n.joint[key] == nil {
-		n.joint[key] = NewProbabilitySpace()
+	if n.joint[encodedFactors] == nil {
+		n.joint[encodedFactors] = NewProbabilitySpace()
 	}
-	n.joint[key].AddPair(jointEvents, prob)
+	n.joint[encodedFactors].AddPair(jointEvents, prob)
 
-	n.UpdateState(jointEvents, prob, "joint", nil)
+	n.UpdateState(jointEvents, "joint", nil)
+
+	return nil
 }
 
 func (n *Node) UpdateState(event string, probType string, parentState *map[string]string) {
