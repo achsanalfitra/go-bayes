@@ -2,6 +2,7 @@ package egn
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -65,46 +66,49 @@ func (n *Node) NormalizeMarg() {
 	}
 }
 
-func (n *Node) SetCond(event string, givenState map[string]string, prob float64) {
-	// Check if parents do not exist
-	if len(n.parents) == 0 {
-		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "has no parents")
-
-		return
-	}
-
+func (n *Node) SetCond(event string, givenState map[string]string, prob float64) error {
 	// Check if marginal and joint are already set
 	factors := make(map[string]string)
 	factors[n.name] = event
-	for name, state := range givenState {
-		factors[name] = state
-	} // factors stores with format {nodeName : event}
+	maps.Copy(factors, givenState) // factors stores with format {nodeName : event}
+
+	// Check if dependency node exists
+	for nodeName := range factors {
+		if _, nodeExists := n.context.NodeName[nodeName]; !nodeExists {
+			return fmt.Errorf("the dependent node %s doesn't exist", nodeName)
+		}
+	}
+
+	factorCombinations := n.encodeFactors(factors) // factors with format "A B C"
+	jointCombinations := n.encodeJoint(factors)    // joint with format "A=a B=b C=c"
 
 	// Check if joint map exists
-	jointFactorsMap, jointOk := n.context.Joint[n.encodeFactors(factors)]
-	jointExists := jointOk && jointFactorsMap != nil && jointFactorsMap[n.encodeJoint(factors)] != struct{}{}
+	// Checking an empty map for key is fine in Golang
+	_, jointExists := n.context.Joint[factorCombinations][jointCombinations]
 
 	// Check if marginal map exists
-	margMap, margOk := n.context.Marginal[n.name]
-	margExists := margOk && margMap[event] != struct{}{}
+	_, margExists := n.context.Marginal[n.name][event]
 
 	if margExists && jointExists {
-		fmt.Println("Error: you can't specify conditional probability since the node", n.name, "already has marginal and joint probability specified")
-
-		return
+		return fmt.Errorf("you can't specify conditional probability since the node %s already has marginal and joint probability specified", n.name)
 	}
 
 	// Update event into conditional probility
 
 	// Create new probability space if it doesn't exist
-	key := n.encodeParents(givenState)
-	if n.cond[key] == nil {
-		n.cond[key] = NewProbabilitySpace()
-	}
-	n.cond[n.encodeFactors(factors)].AddPair(n.encodeCond(event, givenState), prob)
+	encodedParents := n.encodeParents(givenState)
 
-	// Update state into node states
-	n.UpdateState(n.encodeCond(event, givenState), prob, "conditional", &givenState)
+	if n.cond[encodedParents] == nil {
+		n.cond[encodedParents] = NewProbabilitySpace()
+	}
+
+	// add probability pair to node
+	n.cond[encodedParents].AddPair(n.encodeCond(event, givenState), prob)
+
+	// update probability event to context ledger
+	n.UpdateState(n.encodeCond(event, givenState), "conditional", &givenState)
+
+	return nil
 }
 
 // func (n *Node) CompleteCond() {
@@ -156,6 +160,12 @@ func (n *Node) SetJoint(events map[string]string, prob float64) {
 	// Check if there is only one event listed
 	if len(events) == 1 {
 		fmt.Println("Cant have 1 event joint probability bro")
+		return
+	}
+
+	if len(n.parents) > 0 {
+		fmt.Println("Can't set the joint probability when the node has a parent")
+		return
 	}
 
 	// Check marginal inner map
@@ -178,12 +188,12 @@ func (n *Node) SetJoint(events map[string]string, prob float64) {
 
 	parentCombinations := n.encodeParents(parentCombination) // Format "parentCombinations"
 
-	// Ensure 2nd-level map exists for nodeName
+	// Ensure 1st-level map exists for nodeName
 	if _, ok := n.context.Conditional[n.name]; !ok {
 		n.context.Conditional[n.name] = make(map[string]map[string]struct{})
 	}
 
-	// Ensure 3rd-level map exists for parentKey
+	// Ensure 2nd-level map exists for parentKey
 	if _, ok := n.context.Conditional[n.name][parentCombinations]; !ok {
 		n.context.Conditional[n.name][parentCombinations] = make(map[string]struct{})
 	}
@@ -209,7 +219,7 @@ func (n *Node) SetJoint(events map[string]string, prob float64) {
 	n.UpdateState(jointEvents, prob, "joint", nil)
 }
 
-func (n *Node) UpdateState(event string, prob float64, probType string, parentState *map[string]string) {
+func (n *Node) UpdateState(event string, probType string, parentState *map[string]string) {
 
 	// Add state used in setting methods to the state list in the node
 	switch probType {
