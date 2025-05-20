@@ -79,12 +79,10 @@ func DecodeEvents(encodedEvents string) map[string]string {
 }
 
 func DecodeConditional(encodedConditional string) (map[string]string, map[string]string) {
-	events := make(map[string]string)
-	givenEvents := make(map[string]string)
 
 	pipeRemoved := strings.Split(encodedConditional, " | ") // current ["A=a", "B=b C=c"]
-	events = DecodeEvents(pipeRemoved[0])                   // call helper to assign each events to map
-	givenEvents = DecodeEvents(pipeRemoved[1])
+	events := DecodeEvents(pipeRemoved[0])                  // call helper to assign each events to map
+	givenEvents := DecodeEvents(pipeRemoved[1])
 
 	return events, givenEvents // output format map{"A": "a"} and map{"B": "b"}
 }
@@ -113,12 +111,10 @@ func DecodeFactorsFromEvents(encodedEvents string) map[string]struct{} {
 }
 
 func DecodeFactorsFromConditional(encodedConditional string) (map[string]struct{}, map[string]struct{}) {
-	events := make(map[string]struct{})
-	givenEvents := make(map[string]struct{})
 
 	pipeRemoved := strings.Split(encodedConditional, " | ") // current ["A=a", "B=b C=c"]
-	events = DecodeFactorsFromEvents(pipeRemoved[0])        // call helper to assign each events to map
-	givenEvents = DecodeFactorsFromEvents(pipeRemoved[1])
+	events := DecodeFactorsFromEvents(pipeRemoved[0])       // call helper to assign each events to map
+	givenEvents := DecodeFactorsFromEvents(pipeRemoved[1])
 
 	return events, givenEvents // output format map{"A": } and map{"B": }
 }

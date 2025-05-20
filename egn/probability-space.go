@@ -4,15 +4,15 @@ import "fmt"
 
 // ProbabilitySpace is defined as pairs of sample and its probability
 type ProbabilitySpace struct {
-	space              map[string]float64
-	isProbabilitySpace bool // Indicates whether the user current probability space is valid
+	Space   map[string]float64
+	IsValid bool // Indicates whether the user current probability space is valid
 }
 
 // Create a new ProbabilitySpace
 func NewProbabilitySpace() *ProbabilitySpace {
 	return &ProbabilitySpace{
-		space:              make(map[string]float64),
-		isProbabilitySpace: true,
+		Space:   make(map[string]float64),
+		IsValid: true,
 	}
 }
 
@@ -26,7 +26,7 @@ func (ps *ProbabilitySpace) AddPair(event string, prob float64) {
 	}
 
 	// Check if event already exist
-	_, isExist := ps.space[event]
+	_, isExist := ps.Space[event]
 
 	if isExist {
 		fmt.Println("Error: event already exists, use ChangeProbability to change its probability")
@@ -34,7 +34,7 @@ func (ps *ProbabilitySpace) AddPair(event string, prob float64) {
 	}
 
 	// Add the input pair
-	ps.space[event] = prob
+	ps.Space[event] = prob
 	ps.UpdateValidity()
 
 	// Warning the user if the probability exceeds 1
@@ -46,14 +46,14 @@ func (ps *ProbabilitySpace) AddPair(event string, prob float64) {
 // Remove a pair of sample
 func (ps *ProbabilitySpace) DelPair(event string) {
 	// Check if event already exist
-	_, isExist := ps.space[event]
+	_, isExist := ps.Space[event]
 
 	if !isExist {
 		fmt.Println("Error: event doesn't exist")
 		return
 	}
 
-	delete(ps.space, event)
+	delete(ps.Space, event)
 	ps.UpdateValidity()
 }
 
@@ -67,10 +67,10 @@ func (ps *ProbabilitySpace) ChangeProb(event string, prob float64) {
 	}
 
 	// Check if event already exist
-	_, isExist := ps.space[event]
+	_, isExist := ps.Space[event]
 
 	if isExist {
-		ps.space[event] = prob
+		ps.Space[event] = prob
 		ps.UpdateValidity()
 	} else {
 		fmt.Println("Error: event doesn't exist")
@@ -81,7 +81,7 @@ func (ps *ProbabilitySpace) ChangeProb(event string, prob float64) {
 // Check total probability
 func (ps *ProbabilitySpace) TotalProb() float64 {
 	totalProb := 0.0
-	for _, prob := range ps.space {
+	for _, prob := range ps.Space {
 		totalProb += prob
 	}
 	return totalProb
@@ -90,7 +90,7 @@ func (ps *ProbabilitySpace) TotalProb() float64 {
 // Return probability of an event
 func (ps *ProbabilitySpace) ProbOf(event string) float64 {
 	// Check if event already exist
-	_, isExist := ps.space[event]
+	_, isExist := ps.Space[event]
 
 	if !isExist {
 
@@ -98,24 +98,24 @@ func (ps *ProbabilitySpace) ProbOf(event string) float64 {
 		return -400 // missing event
 	}
 
-	return ps.space[event]
+	return ps.Space[event]
 }
 
 // Check probability probability space validity
 func (ps *ProbabilitySpace) CheckValidity() bool {
-	return ps.isProbabilitySpace
+	return ps.IsValid
 }
 
 // Update probability space validity
 func (ps *ProbabilitySpace) UpdateValidity() {
 	totalProb := ps.TotalProb()
 
-	ps.isProbabilitySpace = totalProb >= 0 && totalProb <= 1
+	ps.IsValid = totalProb >= 0 && totalProb <= 1
 }
 
 // Show current probability space
 func (ps *ProbabilitySpace) ShowPair() {
-	for event, prob := range ps.space {
+	for event, prob := range ps.Space {
 		fmt.Printf("%s: %.4f\n", event, prob)
 	}
 }
@@ -129,10 +129,10 @@ func (ps *ProbabilitySpace) Normalize() {
 		return
 	}
 
-	for event, prob := range ps.space {
+	for event, prob := range ps.Space {
 
-		ps.space[event] = prob / totalProb
+		ps.Space[event] = prob / totalProb
 	}
 
-	ps.isProbabilitySpace = true
+	ps.IsValid = true
 }
