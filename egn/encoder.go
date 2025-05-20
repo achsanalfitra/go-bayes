@@ -47,7 +47,7 @@ func EncodeConditional(events map[string]string, givenEvents map[string]string) 
 func EncodeFactors(factors map[string]string) string {
 	var encoded strings.Builder
 
-	// Sort factors so it is deterministic
+	// sort factors so it is deterministic
 	names := make([]string, 0, len(factors))
 	for name := range factors {
 		names = append(names, name)
@@ -55,41 +55,70 @@ func EncodeFactors(factors map[string]string) string {
 
 	slices.Sort(names)
 
-	// Adding sorted parent state onto encoded in order
+	// add sorted parent state onto encoded in order
 	for i, name := range names {
 		encoded.WriteString(name)
 		if i != len(names)-1 {
-			encoded.WriteString(" ") // Add whitespace only if not the last event
+			encoded.WriteString(" ") // add whitespace only if not the last event
 		}
 	}
 
-	return encoded.String()
+	return encoded.String() // output format "A B C"
 }
 
-func (n *Node) decodeCond(encodedCond string) map[string]string {
+func DecodeEvents(encodedEvents string) map[string]string {
 	output := make(map[string]string)
 
-	pipeRemoved := strings.Split(encodedCond, " | ") // current ["A=a", "B=b C=c"]
-	eventPair := strings.Split(pipeRemoved[0], "=")  // eventPair = ["A", "a"]
-	output[eventPair[0]] = eventPair[1]
-
-	parentPairs := strings.Fields(pipeRemoved[1]) // parentPair = ["B=b", "C=c"], split on whitespace with strings.Fields()
-	for _, parent := range parentPairs {          // parent = ["B=b"]
-		pair := strings.Split(parent, "=") // pair = ["B", "b"]
+	eventPairs := strings.Fields(encodedEvents) // factorPairs = ["A=a", "B=b"], split on whitespace with strings.Fields()
+	for _, event := range eventPairs {          // parent = ["A=a"]
+		pair := strings.Split(event, "=") // pair = ["A", "a"]
 		output[pair[0]] = pair[1]
 	}
 
-	return output
+	return output // output format map{"A": "a"}
 }
 
-func (n *Node) decodeJoint(encodedJoint string) map[string]string {
-	output := make(map[string]string)
+func DecodeConditional(encodedConditional string) (map[string]string, map[string]string) {
+	events := make(map[string]string)
+	givenEvents := make(map[string]string)
 
-	factorPairs := strings.Fields(encodedJoint) // factorPairs = ["A=a", "B=b"], split on whitespace with strings.Fields()
-	for _, factor := range factorPairs {        // parent = ["A=a"]
-		pair := strings.Split(factor, "=") // pair = ["A", "a"]
-		output[pair[0]] = pair[1]
+	pipeRemoved := strings.Split(encodedConditional, " | ") // current ["A=a", "B=b C=c"]
+	events = DecodeEvents(pipeRemoved[0])                   // call helper to assign each events to map
+	givenEvents = DecodeEvents(pipeRemoved[1])
+
+	return events, givenEvents // output format map{"A": "a"} and map{"B": "b"}
+}
+
+func DecodeFactors(encodedFactors string) map[string]struct{} {
+	output := make(map[string]struct{})
+
+	factors := strings.Fields(encodedFactors) // factors = ["A", "B"], split on whitespace with strings.Fields()
+	for _, factor := range factors {          // factor = "A"
+		output[factor] = struct{}{}
 	}
 
-	return output
+	return output // output format map{"A": }
+}
+
+func DecodeFactorsFromEvents(encodedEvents string) map[string]struct{} {
+	output := make(map[string]struct{})
+
+	events := strings.Fields(encodedEvents) // events = ["A=a", "B=b"]
+	for _, event := range events {          // event = "A=a"
+		pair := strings.Split(event, "=") // pair = ["A", "a"]
+		output[pair[0]] = struct{}{}
+	}
+
+	return output // output format map{"A": }
+}
+
+func DecodeFactorsFromConditional(encodedConditional string) (map[string]struct{}, map[string]struct{}) {
+	events := make(map[string]struct{})
+	givenEvents := make(map[string]struct{})
+
+	pipeRemoved := strings.Split(encodedConditional, " | ") // current ["A=a", "B=b C=c"]
+	events = DecodeFactorsFromEvents(pipeRemoved[0])        // call helper to assign each events to map
+	givenEvents = DecodeFactorsFromEvents(pipeRemoved[1])
+
+	return events, givenEvents // output format map{"A": } and map{"B": }
 }
