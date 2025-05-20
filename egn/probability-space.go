@@ -130,6 +130,7 @@ func (ps *ProbabilitySpace) Normalize() {
 	}
 
 	for event, prob := range ps.space {
+
 		ps.space[event] = prob / totalProb
 	}
 
