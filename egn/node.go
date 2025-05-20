@@ -6,19 +6,19 @@ import (
 )
 
 const (
-	Cond  = "conditional"
-	Marg  = "marginal"
-	Joint = "joint"
+	ConditionalType = "conditional"
+	MarginalType    = "marginal"
+	JointType       = "joint"
 )
 
 type Node struct {
-	context  *ProbabilityContext
-	name     string
-	marg     *ProbabilitySpace
-	cond     map[string]*ProbabilitySpace // format {parentCombinations: space}
-	joint    map[string]*ProbabilitySpace // format {factors: space} where factors are variables including itself
-	parents  map[string]*Node
-	children map[string]*Node
+	Name        string
+	Context     *ProbabilityContext
+	Marginal    *ProbabilitySpace
+	Conditional map[string]*ProbabilitySpace // format {parentCombinations: space}
+	Joint       map[string]*ProbabilitySpace // format {factors: space} where factors are variables including itself
+	Parents     map[string]*Node
+	Children    map[string]*Node
 }
 
 func NewNode(context *ProbabilityContext, name string) (*Node, error) {
@@ -30,29 +30,30 @@ func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 	}
 
 	return &Node{
-		name:     name,
-		context:  context,
-		marg:     NewProbabilitySpace(),
-		cond:     make(map[string]*ProbabilitySpace),
-		joint:    make(map[string]*ProbabilitySpace),
-		parents:  make(map[string]*Node),
-		children: make(map[string]*Node),
+		Name:        name,
+		Context:     context,
+		Marginal:    NewProbabilitySpace(),
+		Conditional: make(map[string]*ProbabilitySpace),
+		Joint:       make(map[string]*ProbabilitySpace),
+		Parents:     make(map[string]*Node),
+		Children:    make(map[string]*Node),
 	}, nil
 }
 
-func (n *Node) SetMargRoot(event string, prob float64) error {
-	if len(n.parents) > 0 {
-		return fmt.Errorf("can't specify marginal since the node %s already has at least one parent", n.name)
+func (n *Node) SetMarginalRoot(event string, prob float64) error {
+	if len(n.Parents) > 0 {
+		return fmt.Errorf("can't specify marginal since the node %s already has at least one parent", n.Name)
 	}
 
 	// encode marginal probability event as "A=a"
-	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
+	eventMap := map[string]string{n.Name: event}
+	encodedMarginal := EncodeEvents(eventMap)
 
 	// add probability pair to node
-	n.marg.AddPair(encodedMarg, prob)
+	n.Marginal.AddPair(encodedMarginal, prob)
 
 	// update probability event to context ledger
-	n.UpdateState(encodedMarg, "marginal", nil)
+	n.UpdateState(encodedMarginal, MarginalType, nil)
 
 	return nil
 }
