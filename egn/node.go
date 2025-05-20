@@ -40,7 +40,7 @@ func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 	}, nil
 }
 
-func (n *Node) SetMarginalRoot(event string, prob float64) error {
+func (n *Node) SetMarginalRoot(event string, probability float64) error {
 	if len(n.Parents) > 0 {
 		return fmt.Errorf("can't specify marginal since the node %s already has at least one parent", n.Name)
 	}
@@ -50,7 +50,7 @@ func (n *Node) SetMarginalRoot(event string, prob float64) error {
 	encodedMarginal := EncodeEvents(eventMap)
 
 	// add probability pair to node
-	n.Marginal.AddPair(encodedMarginal, prob)
+	n.Marginal.AddPair(encodedMarginal, probability)
 
 	// update probability event to context ledger
 	n.UpdateState(encodedMarginal, MarginalType, nil)
@@ -58,45 +58,32 @@ func (n *Node) SetMarginalRoot(event string, prob float64) error {
 	return nil
 }
 
-func (n *Node) SetMarg(event string, prob float64) error {
-	if len(n.parents) > 0 {
-		return fmt.Errorf("can't specify marginal since the node %s already has at least one parent", n.name)
+func (n *Node) SetMarginal(event string, probability float64) error {
+	if len(n.Parents) > 0 {
+		return fmt.Errorf("can't specify marginal since the node %s already has at least one parent", n.Name)
 	}
-
-	// check if conditional exists
-	condMap, condExists := n.context.Conditional[n.name]
 
 	// check if joint exists
 	// decode factors from conditional
 
-	if condExists {
-		for parentCombinations := range condMap {
-			extractedParentCombinations := n.decodeCond(parentCombinations)
+	for factors := range n.Context.Joint {
+		factorsMap := make(map[string]struct{})
+		factorsMap = DecodeFactors(factors) // assign factors to factorsMap
 
-			// initialize initialMap per loop
-			initialMap := map[string]string{n.name: event}
-
-			// append current parent combination into initial map
-			for parent, state := range extractedParentCombinations {
-				initialMap[parent] = state
-			}
-
-			encodedFactors := n.encodeFactors(initialMap) // format "A B C"
-
-			if _, jointExists := n.context.Joint[encodedFactors]; jointExists {
-				return fmt.Errorf("joint probability already specified for factors %s", encodedFactors)
-			}
+		if _, jointExists := factorsMap[n.Name]; jointExists {
+			return fmt.Errorf("can't specify marginal since the node %s is already included on %s joint probabilities", n.Name, factors)
 		}
 	}
 
 	// encode marginal probability event as "A=a"
-	encodedMarg := fmt.Sprintf("%s=%s", n.name, event)
+	eventMap := map[string]string{n.Name: event}
+	encodedMarginal := EncodeEvents(eventMap)
 
 	// add probability pair to node
-	n.marg.AddPair(encodedMarg, prob)
+	n.Marginal.AddPair(encodedMarginal, probability)
 
 	// update probability event to context ledger
-	n.UpdateState(encodedMarg, "marginal", nil)
+	n.UpdateState(encodedMarginal, MarginalType, nil)
 
 	return nil
 }
