@@ -3,8 +3,6 @@ package egn
 import (
 	"fmt"
 	"maps"
-	"slices"
-	"strings"
 )
 
 const (
@@ -21,10 +19,16 @@ type Node struct {
 	joint    map[string]*ProbabilitySpace // format {factors: space} where factors are variables including itself
 	parents  map[string]*Node
 	children map[string]*Node
-	cpt      map[string]float64
 }
 
-func NewNode(context *ProbabilityContext, name string) *Node {
+func NewNode(context *ProbabilityContext, name string) (*Node, error) {
+
+	if _, nodeExists := context.NodeName[name]; !nodeExists {
+		context.NodeName[name] = struct{}{}
+	} else {
+		return nil, fmt.Errorf("node already exists in this context")
+	}
+
 	return &Node{
 		name:     name,
 		context:  context,
@@ -33,8 +37,7 @@ func NewNode(context *ProbabilityContext, name string) *Node {
 		joint:    make(map[string]*ProbabilitySpace),
 		parents:  make(map[string]*Node),
 		children: make(map[string]*Node),
-		cpt:      make(map[string]float64),
-	}
+	}, nil
 }
 
 func (n *Node) SetMargRoot(event string, prob float64) error {
@@ -297,106 +300,6 @@ func (n *Node) UpdateState(event string, probType string, parentState *map[strin
 	}
 }
 
-func (n *Node) encodeCond(event string, parents map[string]string) string {
-	// Create encoded as strings.Builder
-	var encoded strings.Builder
-	encoded.WriteString(n.name)
-	encoded.WriteString("=")
-	encoded.WriteString(event)
-	encoded.WriteString(" |")
-
-	// Sort parents so it is deterministic
-	pNames := make([]string, 0, len(parents))
-	for pName := range parents {
-		pNames = append(pNames, pName)
-	}
-
-	slices.Sort(pNames)
-
-	// Adding sorted parent state onto encoded in order
-	for _, pName := range pNames {
-		encoded.WriteString(" ")
-		encoded.WriteString(pName)
-		encoded.WriteString("=")
-		encoded.WriteString(parents[pName]) // The map query returns pState
-	}
-
-	// Return encoded as string
-	return encoded.String()
-}
-
-func (n *Node) encodeParents(parents map[string]string) string {
-	var encoded strings.Builder
-
-	// Sort parents so it is deterministic
-	pNames := make([]string, 0, len(parents))
-	for pName := range parents {
-		pNames = append(pNames, pName)
-	}
-
-	slices.Sort(pNames)
-
-	// Adding sorted parent state onto encoded in order
-	for i, pName := range pNames {
-		encoded.WriteString(pName)
-		encoded.WriteString("=")
-		encoded.WriteString(parents[pName]) // The map query returns pState
-		if i != len(pNames)-1 {
-			encoded.WriteString(" ") // Add whitespace only if not the last event
-		}
-	}
-
-	return encoded.String()
-}
-
-func (n *Node) encodeFactors(factors map[string]string) string {
-	var encoded strings.Builder
-
-	// Sort factors so it is deterministic
-	names := make([]string, 0, len(factors))
-	for name := range factors {
-		names = append(names, name)
-	}
-
-	slices.Sort(names)
-
-	// Adding sorted parent state onto encoded in order
-	for i, name := range names {
-		encoded.WriteString(name)
-		if i != len(names)-1 {
-			encoded.WriteString(" ") // Add whitespace only if not the last event
-		}
-	}
-
-	return encoded.String()
-}
-
-func (n *Node) encodeJoint(events map[string]string) string {
-	// Create encoded as strings.Builder
-	var encoded strings.Builder
-
-	// Sort events so it is deterministic
-	eNames := make([]string, 0, len(events))
-	for eName := range events {
-		eNames = append(eNames, eName)
-	}
-
-	slices.Sort(eNames)
-
-	// Adding sorted event names onto encoded in order
-	for i, eName := range eNames {
-		encoded.WriteString(eName)
-		encoded.WriteString("=")
-		encoded.WriteString(events[eName])
-		if i != len(eNames)-1 {
-			encoded.WriteString(" ") // Add whitespace only if not the last event
-		}
-	}
-
-	// Return encoded as string
-	return encoded.String()
-}
-
 func (n *Node) AddParent(parent *Node) {
 	// Check if the parent already exists in the parents map
 	if _, exists := n.parents[parent.name]; exists {
@@ -413,32 +316,4 @@ func (n *Node) AddParent(parent *Node) {
 	n.children[n.name] = n
 
 	fmt.Println("Added parent", parent.name, "to node", n.name)
-}
-
-func (n *Node) decodeCond(encodedCond string) map[string]string {
-	output := make(map[string]string)
-
-	pipeRemoved := strings.Split(encodedCond, " | ") // current ["A=a", "B=b C=c"]
-	eventPair := strings.Split(pipeRemoved[0], "=")  // eventPair = ["A", "a"]
-	output[eventPair[0]] = eventPair[1]
-
-	parentPairs := strings.Fields(pipeRemoved[1]) // parentPair = ["B=b", "C=c"], split on whitespace with strings.Fields()
-	for _, parent := range parentPairs {          // parent = ["B=b"]
-		pair := strings.Split(parent, "=") // pair = ["B", "b"]
-		output[pair[0]] = pair[1]
-	}
-
-	return output
-}
-
-func (n *Node) decodeJoint(encodedJoint string) map[string]string {
-	output := make(map[string]string)
-
-	factorPairs := strings.Fields(encodedJoint) // factorPairs = ["A=a", "B=b"], split on whitespace with strings.Fields()
-	for _, factor := range factorPairs {        // parent = ["A=a"]
-		pair := strings.Split(factor, "=") // pair = ["A", "a"]
-		output[pair[0]] = pair[1]
-	}
-
-	return output
 }
