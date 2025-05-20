@@ -1,6 +1,9 @@
 package egn
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type Set interface {
 	MarginalProbability(event string, probability float64) error
@@ -11,6 +14,7 @@ type Set interface {
 func (n *Node) MarginalProbability(event string, probability float64) error {
 	// check if parent exists
 	if len(n.Parents) > 0 {
+		log.Printf("the node %s has a parent/parents", n.Name)
 		return fmt.Errorf("the node %s has a parent/parents", n.Name)
 	}
 
@@ -19,7 +23,11 @@ func (n *Node) MarginalProbability(event string, probability float64) error {
 	encodedMarginal := EncodeEvents(eventMap)
 
 	// add probability pair to node
-	n.Marginal.AddPair(encodedMarginal, probability)
+	err := n.Marginal.AddPair(encodedMarginal, probability)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
 	// update probability event to context ledger
 	n.UpdateState(encodedMarginal, MarginalType, nil)

@@ -6,7 +6,7 @@ type ProbabilityContext struct {
 	PartialConditional map[string]map[string]map[string]map[string]struct{} // format {fullJointFactors {partialFactors: {dependencyCombinations: {event: }}}}
 	Joint              map[string]map[string]struct{}                       // format {factors : {jointEvent: } }
 	PartialJoint       map[string]map[string]map[string]struct{}            // format {fullJointFactors: {partialJointFactors: {event: }}} (partials must have full joint)
-	NodeName           map[string]struct{}                                  // format {nodeName: }
+	NodeName           map[string]*Node                                     // format {nodeName: }
 }
 
 func BuildContext() *ProbabilityContext {
@@ -16,8 +16,12 @@ func BuildContext() *ProbabilityContext {
 		PartialConditional: make(map[string]map[string]map[string]map[string]struct{}),
 		Joint:              make(map[string]map[string]struct{}),
 		PartialJoint:       make(map[string]map[string]map[string]struct{}),
-		NodeName:           make(map[string]struct{}),
+		NodeName:           make(map[string]*Node),
 	}
 }
 
-// Conditional probability
+func (c *ProbabilityContext) ShowMarginal() {
+	for nodeName := range c.Marginal {
+		c.NodeName[nodeName].Show.MarginalEvents()
+	}
+}

@@ -17,30 +17,30 @@ func NewProbabilitySpace() *ProbabilitySpace {
 }
 
 // Add a new event and probability pair
-func (ps *ProbabilitySpace) AddPair(event string, prob float64) {
+func (ps *ProbabilitySpace) AddPair(event string, probability float64) error {
 
 	// Input first-check
-	if prob < 0 || prob > 1 {
-		fmt.Println("Error: enter probability value between 0 and 1")
-		return
+	if probability < 0 || probability > 1 {
+		return fmt.Errorf("enter probability value between 0 and 1")
 	}
 
 	// Check if event already exist
 	_, isExist := ps.Space[event]
 
 	if isExist {
-		fmt.Println("Error: event already exists, use ChangeProbability to change its probability")
-		return
+		return fmt.Errorf("event %s already exists, use ChangeProbability to change its probability", event)
 	}
 
 	// Add the input pair
-	ps.Space[event] = prob
+	ps.Space[event] = probability
 	ps.UpdateValidity()
 
 	// Warning the user if the probability exceeds 1
 	if !ps.CheckValidity() {
 		fmt.Println("Warning: your input makes total probability exceeding 1")
 	}
+
+	return nil
 }
 
 // Remove a pair of sample

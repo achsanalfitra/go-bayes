@@ -25,25 +25,25 @@ type Node struct {
 func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 
 	if _, nodeExists := context.NodeName[name]; !nodeExists {
-		context.NodeName[name] = struct{}{}
-	} else {
-		return nil, fmt.Errorf("node already exists in this context")
+		node := &Node{
+			Name:        name,
+			Context:     context,
+			Marginal:    NewProbabilitySpace(),
+			Conditional: make(map[string]*ProbabilitySpace),
+			Joint:       make(map[string]*ProbabilitySpace),
+			Parents:     make(map[string]*Node),
+			Children:    make(map[string]*Node),
+		}
+
+		context.NodeName[name] = node
+
+		node.Set = node //set interface to itself to initialize it
+		node.Show = node
+
+		return node, nil
 	}
 
-	node := &Node{
-		Name:        name,
-		Context:     context,
-		Marginal:    NewProbabilitySpace(),
-		Conditional: make(map[string]*ProbabilitySpace),
-		Joint:       make(map[string]*ProbabilitySpace),
-		Parents:     make(map[string]*Node),
-		Children:    make(map[string]*Node),
-	}
-
-	node.Set = node //set interface to itself to initialize it
-	node.Show = node
-
-	return node, nil
+	return nil, fmt.Errorf("node already exists in this context")
 }
 
 func (n *Node) UpdateState(encodedEvent string, probType string, givenEvents *map[string]string) {
