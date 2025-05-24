@@ -44,7 +44,7 @@ func (ps *ProbabilitySpace) AddPair(event string, probability float64) error {
 }
 
 // Remove a pair of sample
-func (ps *ProbabilitySpace) DelPair(event string) {
+func (ps *ProbabilitySpace) DeletePair(event string) {
 	// Check if event already exist
 	_, isExist := ps.Space[event]
 
@@ -58,7 +58,7 @@ func (ps *ProbabilitySpace) DelPair(event string) {
 }
 
 // Change probability of an event
-func (ps *ProbabilitySpace) ChangeProb(event string, prob float64) {
+func (ps *ProbabilitySpace) UpdateProbability(event string, prob float64) {
 
 	// Input first-check
 	if prob < 0 || prob > 1 {
@@ -85,20 +85,6 @@ func (ps *ProbabilitySpace) TotalProb() float64 {
 		totalProb += prob
 	}
 	return totalProb
-}
-
-// Return probability of an event
-func (ps *ProbabilitySpace) ProbOf(event string) float64 {
-	// Check if event already exist
-	_, isExist := ps.Space[event]
-
-	if !isExist {
-
-		fmt.Println("Error: event doesn't exist")
-		return -400 // missing event
-	}
-
-	return ps.Space[event]
 }
 
 // Check probability probability space validity

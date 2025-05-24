@@ -44,7 +44,29 @@ func EncodeConditional(events map[string]string, givenEvents map[string]string) 
 	return encoded.String() // Output format "A=a | B=b C=c"
 }
 
-func EncodeFactors(factors map[string]string) string {
+func EncodeFactorsFromEvents(factors map[string]string) string {
+	var encoded strings.Builder
+
+	// sort factors so it is deterministic
+	names := make([]string, 0, len(factors))
+	for name := range factors {
+		names = append(names, name)
+	}
+
+	slices.Sort(names)
+
+	// add sorted parent state onto encoded in order
+	for i, name := range names {
+		encoded.WriteString(name)
+		if i != len(names)-1 {
+			encoded.WriteString(" ") // add whitespace only if not the last event
+		}
+	}
+
+	return encoded.String() // output format "A B C"
+}
+
+func EncodeFactors(factors map[string]struct{}) string {
 	var encoded strings.Builder
 
 	// sort factors so it is deterministic
