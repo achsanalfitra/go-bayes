@@ -14,23 +14,22 @@ type Node struct {
 	Name        string
 	Context     *ProbabilityContext
 	Marginal    *ProbabilitySpace
-	Conditional map[string]*ProbabilitySpace // format {parentCombinations: space}
-	Joint       map[string]*ProbabilitySpace // format {factors: space} where factors are variables including itself
-	Parents     map[string]*Node
-	Children    map[string]*Node
+	Conditional map[string]*ProbabilitySpace // format {parentStateCombinations: space}
+	Parents     map[string]*Node             // a node acknowledges who are its parents
+	Children    map[string]*Node             // and so does its children
 	Set         Set
 	Show        Show
 }
 
 func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 
+	// check node existence
 	if _, nodeExists := context.NodeName[name]; !nodeExists {
 		node := &Node{
 			Name:        name,
 			Context:     context,
 			Marginal:    NewProbabilitySpace(),
 			Conditional: make(map[string]*ProbabilitySpace),
-			Joint:       make(map[string]*ProbabilitySpace),
 			Parents:     make(map[string]*Node),
 			Children:    make(map[string]*Node),
 		}
@@ -83,18 +82,6 @@ func (n *Node) UpdateState(encodedEvent string, probType string, givenEvents *ma
 			if _, isExist := n.Context.Conditional[nodeName][encodedGivenEvents][encodedEvent]; !isExist {
 				n.Context.Conditional[nodeName][encodedGivenEvents][encodedEvent] = struct{}{}
 			}
-		}
-	case "joint":
-		decodedJoint := DecodeEvents(encodedEvent)
-		encodedFactors := EncodeFactors(decodedJoint)
-
-		// check outer map existence
-		if _, ok := n.Context.Joint[encodedFactors]; !ok {
-			n.Context.Joint[encodedFactors] = make(map[string]struct{})
-		}
-
-		if _, isExist := n.Context.Joint[encodedFactors][encodedEvent]; !isExist {
-			n.Context.Joint[encodedFactors][encodedEvent] = struct{}{}
 		}
 	}
 }

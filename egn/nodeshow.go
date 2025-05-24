@@ -5,7 +5,6 @@ import "fmt"
 type Show interface {
 	MarginalEvents()
 	ConditionalEvents()
-	// JointEvents()
 }
 
 func (n *Node) MarginalEvents() {

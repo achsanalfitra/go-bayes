@@ -20,8 +20,14 @@ func BuildContext() *ProbabilityContext {
 	}
 }
 
-func (c *ProbabilityContext) ShowMarginal() {
-	for nodeName := range c.Marginal {
-		c.NodeName[nodeName].Show.MarginalEvents()
+func (pc *ProbabilityContext) ShowMarginal() {
+	for nodeName := range pc.Marginal {
+		pc.NodeName[nodeName].Show.MarginalEvents()
 	}
+}
+
+func (pc *ProbabilityContext) CheckConsistency(nodeName string) {
+	// Check itself on joint ledger, if exists check marginal event existence on the ledger
+	// If exists check its marginal probability
+	//
 }
