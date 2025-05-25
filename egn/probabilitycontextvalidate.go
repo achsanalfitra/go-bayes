@@ -16,6 +16,6 @@ func (pc *ProbabilityContext) CheckNode(nodeName string) (bool, error) {
 		return false, fmt.Errorf("Node doesn't exist")
 	}
 
-	node := pc.NodeName[nodeName]
-
+	// node := pc.NodeName[nodeName]
+	return true, nil
 }

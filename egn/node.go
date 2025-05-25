@@ -13,6 +13,7 @@ const (
 type Node struct {
 	Name        string
 	Context     *ProbabilityContext
+	States      map[string]struct{}
 	Marginal    *ProbabilitySpace
 	Conditional map[string]*ProbabilitySpace // format {parentStateCombinations: space}
 	Parents     map[string]*Node             // a node acknowledges who are its parents
@@ -28,6 +29,7 @@ func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 		node := &Node{
 			Name:        name,
 			Context:     context,
+			States:      make(map[string]struct{}),
 			Marginal:    NewProbabilitySpace(),
 			Conditional: make(map[string]*ProbabilitySpace),
 			Parents:     make(map[string]*Node),

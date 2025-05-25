@@ -3,11 +3,31 @@ package egn
 import (
 	"fmt"
 	"log"
+	"maps"
 )
 
 type Set interface {
+	NodeStates(states ...string) error
 	MarginalProbability(event string, probability float64) error
 	ConditionalProbability(event string, givenEvents map[string]string, probability float64) error
+}
+
+func (n *Node) NodeStates(states ...string) error {
+	// create map of states
+	statesMap := make(map[string]struct{})
+
+	for _, state := range states {
+		if _, stateExists := statesMap[state]; stateExists {
+			return fmt.Errorf("your input state %s is duplicated", state)
+		}
+
+		// create states if duplicated
+		statesMap[state] = struct{}{}
+	}
+
+	maps.Copy(n.States, statesMap)
+
+	return nil
 }
 
 func (n *Node) MarginalProbability(event string, probability float64) error {
