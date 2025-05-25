@@ -31,6 +31,10 @@ func (n *Node) NodeStates(states ...string) error {
 }
 
 func (n *Node) MarginalProbability(event string, probability float64) error {
+	if len(n.Parents) > 0 {
+		return fmt.Errorf("can't set marginal if the node has a parent")
+	}
+
 	// encode marginal probability event as "A=a"
 	eventMap := map[string]string{n.Name: event}
 	encodedMarginal := EncodeEvents(eventMap)
@@ -49,8 +53,9 @@ func (n *Node) MarginalProbability(event string, probability float64) error {
 }
 
 func (n *Node) ConditionalProbability(event string, givenEvents map[string]string, probability float64) error {
-	for name := range givenEvents {
-		if _, nodeExists := n.Context.NodeName[name]; !nodeExists {
+	// Check given state existence
+	for name, state := range givenEvents {
+		if _, stateExists := n.Parents[name].States[state]; !stateExists {
 			return fmt.Errorf("the node %s doesn't exist in this context", name)
 		}
 	}
