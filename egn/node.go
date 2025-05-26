@@ -88,23 +88,21 @@ func (n *Node) UpdateState(encodedEvent string, probType string, givenEvents *ma
 	}
 }
 
-// func (n *Node) AddParent(parent *Node) {
-// 	// Check if the parent already exists in the parents map
-// 	if _, exists := n.parents[parent.name]; exists {
-// 		fmt.Println("Parent node", parent.name, "already added.")
-// 		return
-// 	}
+func (n *Node) AddParent(parent *Node) error {
+	// check if the parent already exists in the parents map
+	if _, parentExists := n.Parents[parent.Name]; parentExists {
+		fmt.Println("Parent node", parent.Name, "already added.")
+		return fmt.Errorf("parent node %s is already added", parent.Name)
+	}
 
-// 	// Add the parent to the node's parent map
-// 	n.parents[parent.name] = parent
-// 	// Optionally, also add this node as a child of the parent
-// 	if n.children == nil {
-// 		n.children = make(map[string]*Node)
-// 	}
-// 	n.children[n.name] = n
+	// add the parent to the node's parent map
+	n.Parents[parent.Name] = parent
 
-// 	fmt.Println("Added parent", parent.name, "to node", n.name)
-// }
+	// add the node to the children
+	parent.Children[n.Name] = n
+
+	return nil
+}
 
 // func (n *Node) CompleteMarg() {
 // 	if n.marg.TotalProb() < 1 && len(n.marg.space) > 0 {
