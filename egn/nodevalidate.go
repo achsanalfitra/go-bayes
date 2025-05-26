@@ -36,3 +36,8 @@ func (n *Node) ConditionalValid() bool {
 	// return size check
 	return ownConditionalStates == totalStates
 }
+
+func (n *Node) MarginalValid() bool {
+	// TODO: implement functions to validate marginal space
+	return true
+}
