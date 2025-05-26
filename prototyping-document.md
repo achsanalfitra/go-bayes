@@ -29,4 +29,17 @@ A node is identified by their own name. And, they hold their own states and prob
 * **Parents** (self explanatory)
 * **Chiildren** (self explanatory)
 
+#### Setting method and the requirements
+
+Defining a workflow is necessary for simplicity, where this framework may shine. A simple and granular workflow may look like this:
+
+1. Create node and their states
+2. Define topology
+3. Assign probabilities for each states
+4. Check probability completeness in each node, e.g. evaluating conditional states vs the number of parents
+5. Provide completion method
+6. Wrap with high level functions to automate
+
+
+
 
