@@ -22,3 +22,17 @@ func (n *Node) TotalStates() int {
 
 	return ownState
 }
+
+func (n *Node) ConditionalValid() bool {
+	// find out own total states
+	totalStates := n.TotalStates()
+	ownConditionalStates := 0
+
+	// sum all of own states
+	for _, ps := range n.Conditional {
+		ownConditionalStates += len(ps.Space)
+	}
+
+	// return size check
+	return ownConditionalStates == totalStates
+}
