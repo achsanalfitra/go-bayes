@@ -40,6 +40,16 @@ Defining a workflow is necessary for simplicity, where this framework may shine.
 5. Provide completion method
 6. Wrap with high level functions to automate
 
+##### Node
+##### Network (topology)
+##### CPT
+
+The CPT is an object owned by the node. It stores two "decks." They are hashmaps that hold two types of data: 1. existing and 2. missing. Initially, all conditional probabilities are missing. When a new probability is assigned, delete it from the missing entry and add it to the existing map.
+
+This process is easy, and checking can be done via inquiring length.
+
+##### Context
+
 
 
 
