@@ -44,3 +44,24 @@ func (n *Node) CreateCombinations(input int) ([]int, error) {
 
 	return output, nil
 }
+
+func (n *Node) CombinationToIndex(combination []int) (int, error) {
+	combinationIndex := n.CombinationsIndex()
+
+	if len(combination) != len(combinationIndex) {
+		return 0, fmt.Errorf("expected %d, got %d", len(combinationIndex), len(combination))
+	}
+
+	index := 0
+	multiplier := 1
+
+	for i := 0; i < len(combination); i++ {
+		if combination[i] >= combinationIndex[i] {
+			return 0, fmt.Errorf("combination[%d] = %d exceeds max state %d", i, combination[i], combinationIndex[i]-1)
+		}
+		index += combination[i] * multiplier
+		multiplier *= combinationIndex[i]
+	}
+
+	return index, nil
+}
