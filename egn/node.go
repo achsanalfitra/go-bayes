@@ -2,6 +2,8 @@ package egn
 
 import (
 	"fmt"
+
+	"github.com/achsanalfitra/go-bayes/hlp"
 )
 
 const (
@@ -13,11 +15,13 @@ const (
 type Node struct {
 	Name        string
 	Context     *ProbabilityContext
-	States      map[string]struct{}
+	States      *hlp.BiMapInt
 	Marginal    *ProbabilitySpace
 	Conditional map[string]*ProbabilitySpace // format {parentStateCombinations: space}
 	Parents     map[string]*Node             // a node acknowledges who are its parents
-	Children    map[string]*Node             // and so does its children
+	ParentsMap  *hlp.BiMapInt
+	Children    map[string]*Node // and so does its children
+	ChildrenMap *hlp.BiMapInt
 	Set         Set
 	Show        Show
 }
@@ -29,11 +33,13 @@ func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 		node := &Node{
 			Name:        name,
 			Context:     context,
-			States:      make(map[string]struct{}),
+			States:      hlp.NewBiMapInt(),
 			Marginal:    NewProbabilitySpace(),
 			Conditional: make(map[string]*ProbabilitySpace),
 			Parents:     make(map[string]*Node),
+			ParentsMap:  hlp.NewBiMapInt(),
 			Children:    make(map[string]*Node),
+			ChildrenMap: hlp.NewBiMapInt(),
 		}
 
 		context.NodeName[name] = node
