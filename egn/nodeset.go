@@ -3,7 +3,6 @@ package egn
 import (
 	"fmt"
 	"log"
-	"maps"
 )
 
 type Set interface {
@@ -25,7 +24,12 @@ func (n *Node) NodeStates(states ...string) error {
 		statesMap[state] = struct{}{}
 	}
 
-	maps.Copy(n.States, statesMap)
+	// prevent duplication in the map
+	for state := range statesMap {
+		if err := n.States.AddKey(state); err != nil {
+			return fmt.Errorf("failed to add state %q: %w", state, err)
+		}
+	}
 
 	return nil
 }
