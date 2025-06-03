@@ -8,13 +8,13 @@ type NodeValidator interface {
 
 func (n *Node) TotalStates() int {
 	// calculate own states
-	ownState := len(n.States)
+	ownState := len(n.States.StrInt)
 
 	// set default parent states
 	parentStates := 1
 
 	for _, parent := range n.Parents {
-		parentStates *= len(parent.States)
+		parentStates *= len(parent.States.StrInt)
 	}
 
 	// correct cartesian product formula own state * product of parent states

@@ -59,7 +59,7 @@ func (n *Node) MarginalProbability(event string, probability float64) error {
 func (n *Node) ConditionalProbability(event string, givenEvents map[string]string, probability float64) error {
 	// Check given state existence
 	for name, state := range givenEvents {
-		if _, stateExists := n.Parents[name].States[state]; !stateExists {
+		if _, stateExists := n.Parents[name].States.StrInt[state]; !stateExists {
 			return fmt.Errorf("the node %s doesn't exist in this context", name)
 		}
 	}

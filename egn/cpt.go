@@ -19,7 +19,7 @@ func (n *Node) CombinationsIndex() []int {
 	combinationsIndex := make([]int, 0, len(n.Parents))
 
 	for _, parent := range n.Parents {
-		combinationsIndex = append(combinationsIndex, len(parent.States))
+		combinationsIndex = append(combinationsIndex, len(parent.States.StrInt))
 	}
 
 	return combinationsIndex
