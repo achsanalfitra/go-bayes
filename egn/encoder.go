@@ -28,14 +28,14 @@ func SingleEventToMap(event string) map[string]string {
 	return output
 }
 
-func GivenEventToString(events map[string]string, givenMap *hlp.BiMapInt) (error, string) {
+func GivenEventToString(events map[string]string, givenMap *hlp.BiMapInt) (string, error) {
 	// no need to point to the node object, the map should suffice
 	ordered := []int{}
 
 	// retrieve order
 	for parent := range events {
 		if _, exist := givenMap.StrInt[parent]; !exist {
-			return fmt.Errorf("the given parent %s doesn't exist", parent), ""
+			return "", fmt.Errorf("the given parent %s doesn't exist", parent)
 		}
 
 		ordered = append(ordered, givenMap.StrInt[parent])
@@ -57,19 +57,32 @@ func GivenEventToString(events map[string]string, givenMap *hlp.BiMapInt) (error
 		}
 	}
 
-	return nil, output.String()
+	return output.String(), nil
+}
+
+func ConditionalToString(name, state string, givenEvents map[string]string, givenMap *hlp.BiMapInt) (string, error) {
+	var output strings.Builder
+
+	// write name and state
+	eventStr := SingleEventToString(name, state)
+	output.WriteString(eventStr)
+
+	// write the pipe separator
+	output.WriteString(" | ")
+
+	// build given events string
+	givenEventsStr, err := GivenEventToString(givenEvents, givenMap)
+	if err != nil {
+		return "", err
+	}
+
+	output.WriteString(givenEventsStr)
+
+	return output.String(), nil
 }
 
 func JointEventToString() {
 	// implement
-}
-
-func ConditionalToString(event map[string]string, givenEvents map[string]string, n *Node) {
-	// implement encode full conditional to string
-	// use givenEventToString
-	GivenEventToString(givenEvents, n)
-
-	// then build the string
 }
 
 func EncodeEvents(events map[string]string) string {
