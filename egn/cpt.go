@@ -34,6 +34,22 @@ func (cpt *CPT) AddKnown(parentID, parentStateID int) error {
 	return nil
 }
 
+func (cpt *CPT) AddIgnore(parentID, parentStateID int) error {
+
+	err := cpt.CheckState(parentID, parentStateID, cpt.node)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := cpt.Ignored[parentID]; !ok {
+		cpt.Ignored[parentID] = make(map[int]struct{})
+	}
+
+	cpt.Ignored[parentID][parentStateID] = struct{}{}
+
+	return nil
+}
+
 func (cpt *CPT) CheckState(parentID, parentStateID int, n *Node) error {
 	parentKey, exist := n.ParentsMap.IntStr[parentID]
 

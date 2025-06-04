@@ -50,17 +50,19 @@ func (n *Node) MarginalProbability(event string, probability float64) error {
 		return err
 	}
 
-	// update probability event to context ledger
-	n.UpdateState(encodedMarginal, MarginalType, nil)
-
 	return nil
 }
 
 func (n *Node) ConditionalProbability(event string, givenEvents map[string]string, probability float64) error {
 	// Check given state existence
 	for name, state := range givenEvents {
-		if _, stateExists := n.Parents[name].States.StrInt[state]; !stateExists {
+		parent, ok := n.Parents[name]
+		if !ok {
 			return fmt.Errorf("the node %s doesn't exist in this context", name)
+		}
+
+		if _, stateExists := parent.States.StrInt[state]; !stateExists {
+			return fmt.Errorf("the state %s doesn't exist in this context", state)
 		}
 	}
 
@@ -77,8 +79,15 @@ func (n *Node) ConditionalProbability(event string, givenEvents map[string]strin
 	// add probability pair to node
 	n.Conditional[encodedGivenEvents].AddPair(encodedConditionalEvent, probability)
 
-	// update probability event to context ledger
-	n.UpdateState(encodedConditionalEvent, ConditionalType, &givenEvents)
+	// update given events to known parent and their states to CPT
+	for parent, state := range givenEvents {
+		parentID := n.ParentsMap.StrInt[parent]
+		parentStateID := n.Parents[parent].States.StrInt[state]
 
+		err := n.CPT.AddKnown(parentID, parentStateID)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
