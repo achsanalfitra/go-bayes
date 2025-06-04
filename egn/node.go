@@ -22,6 +22,7 @@ type Node struct {
 	ParentsMap  *hlp.BiMapInt
 	Children    map[string]*Node // and so does its children
 	ChildrenMap *hlp.BiMapInt
+	CPT         *CPT
 	Set         Set
 	Show        Show
 }
@@ -46,6 +47,7 @@ func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 
 		node.Set = node //set interface to itself to initialize it
 		node.Show = node
+		node.CPT = CreateCPT(node)
 
 		return node, nil
 	}
