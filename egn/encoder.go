@@ -5,6 +5,32 @@ import (
 	"strings"
 )
 
+func SingleEventToString(name, state string) string {
+	var encoded strings.Builder
+
+	encoded.WriteString(name)
+	encoded.WriteString("=")
+	encoded.WriteString(state)
+
+	return encoded.String()
+}
+
+func JointEventToString() {
+	// implement
+}
+
+func GivenEventToString(events map[string]string, n *Node) {
+	// implement encode from map to given events string, e.g. A: a, B: b -> "B=b A=a" (given that B is actually the first parent)
+}
+
+func ConditionalToString(event map[string]string, givenEvents map[string]string, n *Node) {
+	// implement encode full conditional to string
+	// use givenEventToString
+	GivenEventToString(givenEvents, n)
+
+	// then build the string
+}
+
 func EncodeEvents(events map[string]string) string {
 	var encoded strings.Builder
 
