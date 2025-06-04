@@ -1,8 +1,11 @@
 package egn
 
 import (
+	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/achsanalfitra/go-bayes/hlp"
 )
 
 func SingleEventToString(name, state string) string {
@@ -15,12 +18,50 @@ func SingleEventToString(name, state string) string {
 	return encoded.String()
 }
 
-func JointEventToString() {
-	// implement
+func SingleEventToMap(event string) map[string]string {
+	output := make(map[string]string)
+
+	space := strings.Split(event, "=")
+
+	output[space[0]] = space[1]
+
+	return output
 }
 
-func GivenEventToString(events map[string]string, n *Node) {
-	// implement encode from map to given events string, e.g. A: a, B: b -> "B=b A=a" (given that B is actually the first parent)
+func GivenEventToString(events map[string]string, givenMap *hlp.BiMapInt) (error, string) {
+	// no need to point to the node object, the map should suffice
+	ordered := []int{}
+
+	// retrieve order
+	for parent := range events {
+		if _, exist := givenMap.StrInt[parent]; !exist {
+			return fmt.Errorf("the given parent %s doesn't exist", parent), ""
+		}
+
+		ordered = append(ordered, givenMap.StrInt[parent])
+	}
+
+	slices.Sort(ordered)
+
+	// build string
+	var output strings.Builder
+
+	// for each ordered int, get the respective parent from the given map
+	for i := 0; i < len(ordered); i++ {
+		parentKey := givenMap.IntStr[ordered[i]]
+		output.WriteString(parentKey)
+		output.WriteString("=")
+		output.WriteString(events[parentKey])
+		if i != len(ordered)-1 {
+			output.WriteString(" ")
+		}
+	}
+
+	return nil, output.String()
+}
+
+func JointEventToString() {
+	// implement
 }
 
 func ConditionalToString(event map[string]string, givenEvents map[string]string, n *Node) {
