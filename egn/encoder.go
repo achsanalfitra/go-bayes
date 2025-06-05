@@ -18,12 +18,60 @@ func SingleEventToString(name, state string) string {
 	return encoded.String()
 }
 
+// for now, this function mimics the given events completely
+func MultiEventToString(events map[string]string, eventsMap *hlp.BiMapInt) (string, error) {
+	// no need to point to the node object, the map should suffice
+	ordered := []int{}
+
+	// retrieve order
+	for parent := range events {
+		if _, exist := eventsMap.StrInt[parent]; !exist {
+			return "", fmt.Errorf("the given parent %s doesn't exist", parent)
+		}
+
+		ordered = append(ordered, eventsMap.StrInt[parent])
+	}
+
+	slices.Sort(ordered)
+
+	// build string
+	var output strings.Builder
+
+	// for each ordered int, get the respective parent from the given map
+	for i := range ordered {
+		parentKey := eventsMap.IntStr[ordered[i]]
+		output.WriteString(parentKey)
+		output.WriteString("=")
+		output.WriteString(events[parentKey])
+		if i != len(ordered)-1 {
+			output.WriteString(" ")
+		}
+	}
+
+	return output.String(), nil
+}
+
 func SingleEventToMap(event string) map[string]string {
 	output := make(map[string]string)
 
 	space := strings.Split(event, "=")
 
 	output[space[0]] = space[1]
+
+	return output
+}
+
+func MultiEventToMap(events string) map[string]string {
+	output := make(map[string]string)
+
+	eventsArray := strings.Split(events, " ")
+
+	for _, event := range eventsArray {
+		singleMap := SingleEventToMap(event)
+		for name, state := range singleMap {
+			output[name] = state
+		}
+	}
 
 	return output
 }
@@ -47,7 +95,7 @@ func GivenEventToString(events map[string]string, givenMap *hlp.BiMapInt) (strin
 	var output strings.Builder
 
 	// for each ordered int, get the respective parent from the given map
-	for i := 0; i < len(ordered); i++ {
+	for i := range ordered {
 		parentKey := givenMap.IntStr[ordered[i]]
 		output.WriteString(parentKey)
 		output.WriteString("=")
@@ -79,10 +127,6 @@ func ConditionalToString(name, state string, givenEvents map[string]string, give
 	output.WriteString(givenEventsStr)
 
 	return output.String(), nil
-}
-
-func JointEventToString() {
-	// implement
 }
 
 func EncodeEvents(events map[string]string) string {

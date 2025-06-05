@@ -1,3 +1,4 @@
-03/07/2025
-* develop the proper mapping assignment and their flow, make use of the new bidirectional mapping
-* implement a new encode/decode mechanism which takes advantage of parent/children/state in the bidirectional map
+03/08/2025
+
+* Finish the encoder patterns that utilize the new BiMap pattern. This includes factors only encoding and the joint encoding
+* Implement the new encoding mechanism, cleanup the old encode/decode patterns
