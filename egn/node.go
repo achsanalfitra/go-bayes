@@ -55,46 +55,46 @@ func NewNode(context *ProbabilityContext, name string) (*Node, error) {
 	return nil, fmt.Errorf("node already exists in this context")
 }
 
-func (n *Node) UpdateState(encodedEvent string, probType string, givenEvents *map[string]string) {
-	// input format
-	// event = encodedEvents any type
-	// givenEvents = map
+// func (n *Node) UpdateState(encodedEvent string, probType string, givenEvents *map[string]string) {
+// 	// input format
+// 	// event = encodedEvents any type
+// 	// givenEvents = map
 
-	nodeName := n.Name
+// 	nodeName := n.Name
 
-	// Add state used in setting methods to the state list in the node
-	switch probType {
-	case "marginal":
-		// check outer map existence
-		if _, ok := n.Context.Marginal[nodeName]; !ok {
-			n.Context.Marginal[nodeName] = make(map[string]struct{})
-		}
+// 	// Add state used in setting methods to the state list in the node
+// 	switch probType {
+// 	case "marginal":
+// 		// check outer map existence
+// 		if _, ok := n.Context.Marginal[nodeName]; !ok {
+// 			n.Context.Marginal[nodeName] = make(map[string]struct{})
+// 		}
 
-		if _, isExist := n.Context.Marginal[nodeName][encodedEvent]; !isExist {
-			n.Context.Marginal[nodeName][encodedEvent] = struct{}{}
-		}
+// 		if _, isExist := n.Context.Marginal[nodeName][encodedEvent]; !isExist {
+// 			n.Context.Marginal[nodeName][encodedEvent] = struct{}{}
+// 		}
 
-	case "conditional":
-		if givenEvents != nil {
-			encodedGivenEvents := EncodeEvents(*givenEvents)
+// 	case "conditional":
+// 		if givenEvents != nil {
+// 			encodedGivenEvents := EncodeEvents(*givenEvents)
 
-			// check outer map existence
-			if _, ok := n.Context.Conditional[nodeName]; !ok {
-				n.Context.Conditional[nodeName] = make(map[string]map[string]struct{})
-			}
+// 			// check outer map existence
+// 			if _, ok := n.Context.Conditional[nodeName]; !ok {
+// 				n.Context.Conditional[nodeName] = make(map[string]map[string]struct{})
+// 			}
 
-			// check middle-layer map existence
-			if _, ok := n.Context.Conditional[nodeName][encodedGivenEvents]; !ok {
-				n.Context.Conditional[nodeName][encodedGivenEvents] = make(map[string]struct{})
-			}
+// 			// check middle-layer map existence
+// 			if _, ok := n.Context.Conditional[nodeName][encodedGivenEvents]; !ok {
+// 				n.Context.Conditional[nodeName][encodedGivenEvents] = make(map[string]struct{})
+// 			}
 
-			// check the event existence, else add
-			if _, isExist := n.Context.Conditional[nodeName][encodedGivenEvents][encodedEvent]; !isExist {
-				n.Context.Conditional[nodeName][encodedGivenEvents][encodedEvent] = struct{}{}
-			}
-		}
-	}
-}
+// 			// check the event existence, else add
+// 			if _, isExist := n.Context.Conditional[nodeName][encodedGivenEvents][encodedEvent]; !isExist {
+// 				n.Context.Conditional[nodeName][encodedGivenEvents][encodedEvent] = struct{}{}
+// 			}
+// 		}
+// 	}
+// }
 
 func (n *Node) AddParent(parent *Node) error {
 	// check if the parent already exists in the parents map

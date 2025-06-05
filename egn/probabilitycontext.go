@@ -17,7 +17,7 @@ func BuildContext() *ProbabilityContext {
 	}
 
 	// refer to itself to initialize interface
-	pc.Define = pc
+	// pc.Define = pc
 
 	return pc
 }

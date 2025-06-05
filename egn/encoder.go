@@ -130,19 +130,16 @@ func ConditionalToString(name, state string, givenEvents map[string]string, give
 }
 
 func ConditionalToMap(conditionalEvent string) (map[string]string, map[string]string) {
-	eventOutput := make(map[string]string)
-	givenEventOutput := make(map[string]string)
-
 	// split to event and givenEvent
 	conditionalEventArray := strings.Split(conditionalEvent, " | ")
 	event := conditionalEventArray[0]
 	givenEvent := conditionalEventArray[1]
 
 	// assign event to map
-	eventOutput = SingleEventToMap(event)
+	eventOutput := SingleEventToMap(event)
 
 	// assign multi events to map
-	givenEventOutput = MultiEventToMap(givenEvent)
+	givenEventOutput := MultiEventToMap(givenEvent)
 
 	return eventOutput, givenEventOutput
 }
