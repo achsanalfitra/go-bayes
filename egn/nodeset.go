@@ -40,8 +40,7 @@ func (n *Node) MarginalProbability(event string, probability float64) error {
 	}
 
 	// encode marginal probability event as "A=a"
-	eventMap := map[string]string{n.Name: event}
-	encodedMarginal := EncodeEvents(eventMap)
+	encodedMarginal := SingleEventToString(n.Name, event)
 
 	// add probability pair to node
 	err := n.Marginal.AddPair(encodedMarginal, probability)
@@ -66,10 +65,17 @@ func (n *Node) ConditionalProbability(event string, givenEvents map[string]strin
 		}
 	}
 
-	encodedGivenEvents := EncodeEvents(givenEvents)
+	// get encoded parent states
+	encodedGivenEvents, err := MultiEventToString(givenEvents, n.ParentsMap)
+	if err != nil {
+		return err
+	}
 
-	eventMap := map[string]string{n.Name: event}
-	encodedConditionalEvent := EncodeConditional(eventMap, givenEvents)
+	// get encoded conditional event
+	encodedConditionalEvent, err := ConditionalToString(n.Name, event, givenEvents, n.ParentsMap)
+	if err != nil {
+		return err
+	}
 
 	// check probability space existence
 	if _, spaceExists := n.Conditional[encodedGivenEvents]; !spaceExists {
