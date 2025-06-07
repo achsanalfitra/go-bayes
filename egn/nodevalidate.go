@@ -46,6 +46,18 @@ func (n *Node) MarginalCoverage(inferenceType, query string) error {
 	return nil
 }
 
+func (n *Node) MarginalInternal() (bool, string) {
+	// update internal validity\
+	n.Marginal.UpdateValidity()
+
+	// check space validity
+	if !n.Marginal.CheckValidity() {
+		return false, fmt.Sprintf("the probability is: %f; probability must be within 0 to 1 range ", n.Marginal.TotalProb())
+	}
+
+	return true, "marginal space valid"
+}
+
 // func (n *Node) TotalStates() int {
 // 	// calculate own states
 // 	ownState := len(n.States.StrInt)
