@@ -1,43 +1,78 @@
 package egn
 
+import "fmt"
+
 type NodeValidator interface {
 	TotalStates() int
 	ConditionalValid() bool
-	MarginalValid() bool
+	MarginalValidator
 }
 
-func (n *Node) TotalStates() int {
-	// calculate own states
-	ownState := len(n.States.StrInt)
+type MarginalValidator interface {
+	MarginalCoverage(inferenceType, query string) error
+	MarginalInternal() (bool, string)
+}
 
-	// set default parent states
-	parentStates := 1
+func (n *Node) MarginalCoverage(inferenceType, query string) error {
+	// base case for coverage check is it is query driven
 
-	for _, parent := range n.Parents {
-		parentStates *= len(parent.States.StrInt)
+	// create a multi use-cases
+	switch inferenceType {
+	case "joint":
+		jointMap := MultiEventToMap(query)
+		marginalState := jointMap[n.Name]
+		if _, exists := n.Marginal.Space[SingleEventToString(n.Name, marginalState)]; !exists {
+			return fmt.Errorf("the node %s does not have the inquired state %s", n.Name, marginalState)
+		}
+	case "conditional":
+		_, givenEventsMap := ConditionalToMap(query)
+
+		givenEventsSize := len(givenEventsMap)
+
+		// handle invalid query
+		if givenEventsSize > 1 {
+			return fmt.Errorf("there are %d elements in the given events; use other validation methods to query", givenEventsSize)
+		}
+
+		marginalState := givenEventsMap[n.Name]
+		if _, exists := n.Marginal.Space[SingleEventToString(n.Name, marginalState)]; !exists {
+			return fmt.Errorf("the inquired state %s doesn't exist", marginalState)
+		}
+
+	default:
+		return fmt.Errorf("%s is an invalid inference type, use inferenceType object to query", inferenceType)
 	}
 
-	// correct cartesian product formula own state * product of parent states
-	ownState *= parentStates
-
-	return ownState
+	return nil
 }
 
-func (n *Node) ConditionalValid() bool {
-	// find out own total states
-	totalStates := n.TotalStates()
-	ownConditionalStates := 0
+// func (n *Node) TotalStates() int {
+// 	// calculate own states
+// 	ownState := len(n.States.StrInt)
 
-	// sum all of own states
-	for _, ps := range n.Conditional {
-		ownConditionalStates += len(ps.Space)
-	}
+// 	// set default parent states
+// 	parentStates := 1
 
-	// return size check
-	return ownConditionalStates == totalStates
-}
+// 	for _, parent := range n.Parents {
+// 		parentStates *= len(parent.States.StrInt)
+// 	}
 
-func (n *Node) MarginalValid() bool {
-	// TODO: implement functions to validate marginal space
-	return true
-}
+// 	// correct cartesian product formula own state * product of parent states
+// 	ownState *= parentStates
+
+// 	return ownState
+// }
+
+// func (n *Node) ConditionalValid() bool {
+// 	// find out own total states
+// 	totalStates := n.TotalStates()
+// 	ownConditionalStates := 0
+
+// 	// sum all of own states
+// 	for _, ps := range n.Conditional {
+// 		ownConditionalStates += len(ps.Space)
+// 	}
+
+// 	// return size check
+// 	return ownConditionalStates == totalStates
+// }
